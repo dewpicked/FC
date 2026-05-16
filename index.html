@@ -65,10 +65,25 @@
   .add-step-area input, .add-step-area textarea { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 3px; padding: 5px 7px; font-size: 11px; font-family: 'Barlow', sans-serif; resize: none; width: 100%; }
   .add-step-area input:focus, .add-step-area textarea:focus { outline: none; border-color: var(--accent); }
   .add-step-area textarea { height: 48px; }
-  ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* FILMSTRIP */
+.filmstrip-bar { background: #0a1209; border-top: 1px solid var(–border); padding: 6px 8px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; overflow-x: auto; }
+.filmstrip-bar.hidden { display: none; }
+.frame-thumb { position: relative; flex-shrink: 0; cursor: pointer; border: 2px solid var(–border); border-radius: 3px; overflow: hidden; transition: border-color 0.15s; }
+.frame-thumb:hover { border-color: rgba(255,255,255,0.4); }
+.frame-thumb.active { border-color: var(–accent); }
+.frame-thumb canvas { display: block; }
+.frame-thumb .frame-num { position: absolute; bottom: 2px; left: 3px; font-family: ‘Barlow Condensed’, sans-serif; font-size: 10px; font-weight: 700; color: white; text-shadow: 0 0 4px #000; pointer-events: none; }
+.frame-thumb .frame-del { position: absolute; top: 1px; right: 2px; background: rgba(0,0,0,0.6); border: none; color: rgba(255,255,255,0.5); font-size: 11px; line-height: 1; padding: 1px 3px; cursor: pointer; border-radius: 2px; display: none; }
+.frame-thumb:hover .frame-del { display: block; }
+.frame-thumb .frame-del:hover { color: #e74c3c; }
+.frame-add-btn { flex-shrink: 0; width: 56px; height: 40px; border: 1px dashed rgba(255,255,255,0.2); border-radius: 3px; background: transparent; color: rgba(255,255,255,0.35); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.frame-add-btn:hover { border-color: var(–accent); color: var(–accent); }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
 </style>
+
 </head>
 <body>
 <header>
@@ -185,7 +200,22 @@
       <textarea id="step-comment" placeholder="Instruktion / kommentar..."></textarea>
       <button class="btn btn-primary" onclick="addStep()">+ Lägg till moment</button>
     </div>
+
+```
+<div class="toolbox-section">
+  <div class="toolbox-title">Frames</div>
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:rgba(255,255,255,0.6);">
+    <input type="checkbox" id="multiframe-toggle" onchange="toggleMultiframe(this.checked)" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;">
+    Flera planbilder
+  </label>
+  <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:5px;">Varje frame är en<br>egen planritning</div>
+</div>
+```
+
   </div>
+
+<div class="filmstrip-bar hidden" id="filmstrip-bar">
+  <button class="frame-add-btn" onclick="addFrame()" title="Ny frame">+</button>
 </div>
 
 <script>
@@ -195,8 +225,130 @@ var S = {
   pitch:'full', tool:'player', lineColor:'#ffffff',
   elements:[], steps:[], lineStart:null,
   dragging:null, dragOffX:0, dragOffY:0,
-  history:[], activeStep:null, mouse:null
+  history:[], activeStep:null, mouse:null,
+  multiframe:false,
+  frames:[], currentFrame:0
 };
+
+
+// =====================
+// MULTI-FRAME
+// =====================
+function toggleMultiframe(on) {
+  S.multiframe = on;
+  var bar = document.getElementById('filmstrip-bar');
+  if (on) {
+    bar.classList.remove('hidden');
+    // Init with current canvas as frame 0 if empty
+    if (!S.frames.length) {
+      S.frames = [{ elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch }];
+      S.currentFrame = 0;
+    }
+    renderFilmstrip();
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+function saveCurrentFrame() {
+  if (!S.multiframe || !S.frames.length) return;
+  S.frames[S.currentFrame] = { elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch };
+}
+
+function loadFrame(idx) {
+  if (!S.frames[idx]) return;
+  saveCurrentFrame();
+  S.currentFrame = idx;
+  var f = S.frames[idx];
+  S.elements = JSON.parse(JSON.stringify(f.elements));
+  if (f.pitch) { S.pitch = f.pitch; document.querySelectorAll('.pitch-option').forEach(function(b){b.classList.remove('active');}); var pb=document.querySelector('[data-pitch="'+f.pitch+'"]'); if(pb) pb.classList.add('active'); }
+  drawAll();
+  renderFilmstrip();
+}
+
+function addFrame() {
+  saveCurrentFrame();
+  // New frame copies current layout but clears elements
+  S.frames.push({ elements: [], pitch: S.pitch });
+  S.currentFrame = S.frames.length - 1;
+  S.elements = [];
+  drawAll();
+  renderFilmstrip();
+}
+
+function deleteFrame(idx) {
+  if (S.frames.length <= 1) { alert('Minst en frame krävs.'); return; }
+  S.frames.splice(idx, 1);
+  if (S.currentFrame >= S.frames.length) S.currentFrame = S.frames.length - 1;
+  loadFrame(S.currentFrame);
+}
+
+function renderFilmstrip() {
+  var bar = document.getElementById('filmstrip-bar');
+  // Remove old thumbs
+  var old = bar.querySelectorAll('.frame-thumb');
+  old.forEach(function(el){ el.remove(); });
+  var addBtn = bar.querySelector('.frame-add-btn');
+
+  S.frames.forEach(function(frame, idx) {
+    var wrap = document.createElement('div');
+    wrap.className = 'frame-thumb' + (idx === S.currentFrame ? ' active' : '');
+    wrap.onclick = function(){ loadFrame(idx); };
+
+    var tc = document.createElement('canvas');
+    tc.width = 56; tc.height = 40;
+    renderMiniature(tc, frame);
+    wrap.appendChild(tc);
+
+    var num = document.createElement('div');
+    num.className = 'frame-num';
+    num.textContent = idx + 1;
+    wrap.appendChild(num);
+
+    var del = document.createElement('button');
+    del.className = 'frame-del';
+    del.textContent = '✕';
+    del.onclick = function(e){ e.stopPropagation(); deleteFrame(idx); };
+    wrap.appendChild(del);
+
+    bar.insertBefore(wrap, addBtn);
+  });
+}
+
+function renderMiniature(tc, frame) {
+  var tctx = tc.getContext('2d');
+  var W=tc.width, H=tc.height, PAD=3;
+  var cfgs={full:{realW:68,realH:105},half:{realW:68,realH:52.5},third:{realW:68,realH:35},box:{realW:40.32,realH:16.5},free:{realW:68,realH:105}};
+  var cfg=cfgs[frame.pitch||'full'];
+  var aspect=cfg.realW/cfg.realH;
+  var pw=W-PAD*2,ph=H-PAD*2;
+  if(pw/ph>aspect) pw=ph*aspect; else ph=pw/aspect;
+  var ox=(W-pw)/2, oy=(H-ph)/2;
+  // Draw green bg
+  tctx.fillStyle='#1a5c28'; tctx.fillRect(ox,oy,pw,ph);
+  // Border
+  tctx.strokeStyle='rgba(255,255,255,0.7)'; tctx.lineWidth=0.5; tctx.strokeRect(ox,oy,pw,ph);
+  // Draw elements as dots/lines
+  frame.elements.forEach(function(el){
+    var ex=ox+(el.x/cfg.realW)*pw, ey=oy+(el.y/cfg.realH)*ph;
+    if(el.type==='player'){
+      tctx.fillStyle=el.team==='A'?'#550080':'#e8e8e8';
+      tctx.beginPath();tctx.arc(ex,ey,2.5,0,Math.PI*2);tctx.fill();
+    } else if(el.type==='cone'){
+      tctx.fillStyle='#ff6b1a';
+      tctx.beginPath();tctx.arc(ex,ey,1.5,0,Math.PI*2);tctx.fill();
+    } else if(el.type==='ball'){
+      tctx.fillStyle='white';
+      tctx.beginPath();tctx.arc(ex,ey,1.5,0,Math.PI*2);tctx.fill();
+    } else if(el.x2!=null){
+      var ex2=ox+(el.x2/cfg.realW)*pw, ey2=oy+(el.y2/cfg.realH)*ph;
+      tctx.strokeStyle=el.color||'#fff'; tctx.lineWidth=0.8;
+      if(el.type==='move') tctx.setLineDash([2,1]); else tctx.setLineDash([]);
+      tctx.beginPath();tctx.moveTo(ex,ey);tctx.lineTo(ex2,ey2);tctx.stroke();
+      tctx.setLineDash([]);
+    }
+  });
+}
 
 function resize() {
   var area = document.getElementById('canvas-area');
@@ -405,6 +557,7 @@ function drawAll() {
     else if(el.type==='ball') drawBall(p.x,p.y);
     else drawArrow(el,d);
   });
+  if(S.multiframe&&S.frames.length){ S.frames[S.currentFrame].elements=JSON.parse(JSON.stringify(S.elements)); }
   if(S.lineStart&&S.mouse&&(S.tool==='pass'||S.tool==='move'||S.tool==='dribble')){
     var fe={type:S.tool,x:S.lineStart.x,y:S.lineStart.y,x2:S.mouse.x,y2:S.mouse.y,color:S.lineColor};
     drawArrow(fe,d,0.45);
@@ -521,9 +674,11 @@ function setTool(t){
   drawAll();
 }
 function setPitch(p){
+  if(S.multiframe) saveCurrentFrame();
   S.pitch=p;
   document.querySelectorAll('.pitch-option').forEach(function(b){b.classList.remove('active');});
   document.querySelector('[data-pitch="'+p+'"]').classList.add('active');
+  if(S.multiframe){ S.frames[S.currentFrame].pitch=p; renderFilmstrip(); }
   drawAll();
 }
 function setLineColor(c){
