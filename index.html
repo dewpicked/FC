@@ -294,7 +294,7 @@ function drawPitch(d) {
 }
 
 function drawJersey(px,py,num,color) {
-  var s=13;
+  var s=17;
   ctx.save(); ctx.translate(px,py);
   // Shadow
   ctx.fillStyle='rgba(0,0,0,0.3)';
@@ -400,7 +400,7 @@ function drawAll() {
   drawPitch(d);
   S.elements.forEach(function(el){
     var p=m2p(el.x,el.y,d);
-    if(el.type==='player') drawJersey(p.x,p.y,el.num,el.team==='A'?'#6a1bbf':'#e8e8e8');
+    if(el.type==='player') drawJersey(p.x,p.y,el.num,el.team==='A'?'#550080':'#e8e8e8');
     else if(el.type==='cone') drawCone(p.x,p.y,el.color);
     else if(el.type==='ball') drawBall(p.x,p.y);
     else drawArrow(el,d);
