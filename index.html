@@ -130,6 +130,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3,12 Q5,8 7,12 Q9,16 11,12 Q13,8 15,12 Q17,16 19,12"/><polyline points="16,8 19,12 16,16"/></svg>
           Dribbling
         </button>
+        <button class="tool-btn" id="tool-line" onclick="setTool('line')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="18" x2="21" y2="6"/></svg>
+          Streck
+        </button>
         <button class="tool-btn" id="tool-ball" onclick="setTool('ball')">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="white" stroke="#555" stroke-width="1.5"/><path d="M12 4 L14 8 L12 11 L10 8 Z" fill="#333"/><circle cx="12" cy="12" r="2" fill="#333"/></svg>
           Boll
@@ -183,6 +187,9 @@
       </div>
       <div class="legend-item">
         <svg width="30" height="10"><path d="M0,5 Q4,1 8,5 Q12,9 16,5 Q20,1 24,5" stroke="white" stroke-width="2" fill="none"/><polygon points="21,2 25,5 21,8" fill="white"/></svg>Dribbling
+      </div>
+      <div class="legend-item">
+        <svg width="26" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="white" stroke-width="2"/></svg>Streck
       </div>
     </div>
   </div>
@@ -533,15 +540,21 @@ function drawArrow(el,d,alpha) {
       }
       ctx.stroke();
     }
+  } else if(el.type==='line'){
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
   }
   ctx.setLineDash([]);
-  var ang=Math.atan2(b.y-a.y,b.x-a.x),al=10,asp=0.38;
-  ctx.fillStyle=el.color||'#fff';
-  ctx.beginPath();
-  ctx.moveTo(b.x,b.y);
-  ctx.lineTo(b.x-al*Math.cos(ang-asp),b.y-al*Math.sin(ang-asp));
-  ctx.lineTo(b.x-al*Math.cos(ang+asp),b.y-al*Math.sin(ang+asp));
-  ctx.closePath();ctx.fill();
+  // Only draw arrowhead for arrow types
+  if(el.type!=='line'){
+    var ang=Math.atan2(b.y-a.y,b.x-a.x),al=10,asp=0.38;
+    ctx.fillStyle=el.color||'#fff';
+    ctx.beginPath();
+    ctx.moveTo(b.x,b.y);
+    ctx.lineTo(b.x-al*Math.cos(ang-asp),b.y-al*Math.sin(ang-asp));
+    ctx.lineTo(b.x-al*Math.cos(ang+asp),b.y-al*Math.sin(ang+asp));
+    ctx.closePath();ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -558,7 +571,7 @@ function drawAll() {
     else drawArrow(el,d);
   });
   if(S.multiframe&&S.frames.length){ S.frames[S.currentFrame].elements=JSON.parse(JSON.stringify(S.elements)); }
-  if(S.lineStart&&S.mouse&&(S.tool==='pass'||S.tool==='move'||S.tool==='dribble')){
+  if(S.lineStart&&S.mouse&&(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line')){
     var fe={type:S.tool,x:S.lineStart.x,y:S.lineStart.y,x2:S.mouse.x,y2:S.mouse.y,color:S.lineColor};
     drawArrow(fe,d,0.45);
     var sp=m2p(S.lineStart.x,S.lineStart.y,d);
@@ -610,7 +623,7 @@ function onDown(e) {
   if(S.tool==='ball'){
     push();S.elements.push({type:'ball',x:mx,y:my});drawAll();return;
   }
-  if(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'){
+  if(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line'){
     if(!S.lineStart){S.lineStart={x:mx,y:my};}
     else{
       push();
@@ -624,7 +637,7 @@ function onMove(e) {
   e.preventDefault();
   var pos=evPos(e);
   S.mouse={x:pos.mx,y:pos.my};
-  var hints={player:'Klicka=Team A · Shift=Team B',cone:'Klicka för kon',pass:'Klicka startpunkt sedan slutpunkt',move:'Klicka startpunkt sedan slutpunkt',dribble:'Klicka startpunkt sedan slutpunkt',ball:'Klicka för boll',select:'Dra för att flytta',erase:'Klicka för att radera'};
+  var hints={player:'Klicka=Team A · Shift=Team B',cone:'Klicka för kon',pass:'Klicka startpunkt sedan slutpunkt',move:'Klicka startpunkt sedan slutpunkt',dribble:'Klicka startpunkt sedan slutpunkt',line:'Klicka startpunkt sedan slutpunkt',ball:'Klicka för boll',select:'Dra för att flytta',erase:'Klicka för att radera'};
   document.getElementById('hint-bar').textContent=S.lineStart?'Klicka för slutpunkt — Esc avbryter':(hints[S.tool]||'');
   if(S.dragging){
     var d2=getDims();
@@ -646,14 +659,14 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){S.lineStart=null;drawAll();}
   if((e.ctrlKey||e.metaKey)&&e.key==='z') undoLast();
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
-  var map={p:'player',k:'cone',a:'pass',r:'move',d:'dribble',b:'ball',s:'select',e:'erase'};
+  var map={p:'player',k:'cone',a:'pass',r:'move',d:'dribble',l:'line',b:'ball',s:'select',e:'erase'};
   if(map[e.key]) setTool(map[e.key]);
 });
 
 function findEl(px,py,d){
   for(var i=S.elements.length-1;i>=0;i--){
     var el=S.elements[i];
-    if(el.type==='pass'||el.type==='move'||el.type==='dribble'){
+    if(el.type==='pass'||el.type==='move'||el.type==='dribble'||el.type==='line'){
       if(el.x2==null) continue;
       var a=m2p(el.x,el.y,d),b=m2p(el.x2,el.y2,d);
       if(dist(px,py,(a.x+b.x)/2,(a.y+b.y)/2)<18) return el;
@@ -733,63 +746,140 @@ function renderSteps(){
   }).join('');
 }
 
-function exportPNG(){
-  var stepLines=S.steps.map(function(s){return s.num+'. '+s.title+(s.comment?' - '+s.comment:'');});
-  if(!stepLines.length){
-    var a=document.createElement('a');a.download='traningsplan.png';a.href=canvas.toDataURL('image/png');a.click();return;
+// Render a frame to a full-size offscreen canvas and return it
+function renderFrameToCanvas(frame) {
+  var oc = document.createElement('canvas');
+  oc.width = canvas.width; oc.height = canvas.height;
+  var octx = oc.getContext('2d');
+  // Save global state
+  var savedEls=S.elements, savedPitch=S.pitch;
+  S.elements = frame.elements;
+  S.pitch = frame.pitch || savedPitch;
+  // Swap globals temporarily
+  var realCanvas=canvas, realCtx=ctx;
+  canvas=oc; ctx=octx;
+  drawAll();
+  canvas=realCanvas; ctx=realCtx;
+  S.elements=savedEls; S.pitch=savedPitch;
+  return oc;
+}
+
+// Get the list of frames to export (multiframe mode or just current)
+function getExportFrames() {
+  if (S.multiframe && S.frames.length > 0) {
+    // Make sure current frame is saved first
+    saveCurrentFrame();
+    return S.frames;
   }
-  var lineH=18,pad=14,textH=stepLines.length*lineH+pad*2+10;
-  var fc=document.createElement('canvas');
-  fc.width=canvas.width;fc.height=canvas.height+textH;
-  var fctx=fc.getContext('2d');
-  fctx.drawImage(canvas,0,0);
-  fctx.fillStyle='#0f1a12';
-  fctx.fillRect(0,canvas.height,fc.width,textH);
-  fctx.strokeStyle='rgba(245,200,66,0.5)';fctx.lineWidth=1;
-  fctx.beginPath();fctx.moveTo(pad,canvas.height+8);fctx.lineTo(fc.width-pad,canvas.height+8);fctx.stroke();
-  fctx.fillStyle='rgba(255,255,255,0.82)';
-  fctx.font='13px Barlow, Arial, sans-serif';
-  stepLines.forEach(function(line,i){
-    fctx.fillText(line,pad,canvas.height+pad+10+(i*lineH));
-  });
-  var a=document.createElement('a');a.download='traningsplan.png';a.href=fc.toDataURL('image/png');a.click();
+  return [{ elements: S.elements, pitch: S.pitch, comment: '' }];
+}
+
+function exportPNG(){
+  var frames = getExportFrames();
+  if (frames.length === 1) {
+    // Single frame — same as before but with steps text
+    var fc = document.createElement('canvas');
+    var stepLines = S.steps.map(function(s){ return s.num+'. '+s.title+(s.comment?' - '+s.comment:''); });
+    var lineH=18, pad=14, textH=stepLines.length ? stepLines.length*lineH+pad*2+10 : 0;
+    fc.width = canvas.width; fc.height = canvas.height + textH;
+    var fctx = fc.getContext('2d');
+    fctx.drawImage(canvas, 0, 0);
+    if (textH) {
+      fctx.fillStyle='#0f1a12'; fctx.fillRect(0,canvas.height,fc.width,textH);
+      fctx.strokeStyle='rgba(245,200,66,0.5)'; fctx.lineWidth=1;
+      fctx.beginPath(); fctx.moveTo(pad,canvas.height+8); fctx.lineTo(fc.width-pad,canvas.height+8); fctx.stroke();
+      fctx.fillStyle='rgba(255,255,255,0.82)'; fctx.font='13px Barlow,Arial,sans-serif';
+      stepLines.forEach(function(line,i){ fctx.fillText(line,pad,canvas.height+pad+10+(i*lineH)); });
+    }
+    var a=document.createElement('a'); a.download='traningsplan.png'; a.href=fc.toDataURL('image/png'); a.click();
+  } else {
+    // Multi-frame: stitch all frames vertically into one tall PNG
+    var cols = Math.min(frames.length, 3);
+    var rows = Math.ceil(frames.length / cols);
+    var fw = canvas.width, fh = canvas.height;
+    var gap = 12, labelH = 22;
+    var totalW = cols*(fw+gap)-gap;
+    var totalH = rows*(fh+labelH+gap)-gap;
+    var fc = document.createElement('canvas');
+    fc.width = totalW; fc.height = totalH;
+    var fctx = fc.getContext('2d');
+    fctx.fillStyle='#0a1209'; fctx.fillRect(0,0,totalW,totalH);
+    frames.forEach(function(frame, idx){
+      var col=idx%cols, row=Math.floor(idx/cols);
+      var ox=col*(fw+gap), oy=row*(fh+labelH+gap);
+      var oc = renderFrameToCanvas(frame);
+      fctx.drawImage(oc, ox, oy);
+      // Frame label
+      fctx.fillStyle='rgba(245,200,66,0.9)';
+      fctx.font='bold 13px Barlow Condensed,sans-serif';
+      fctx.textAlign='left';
+      fctx.fillText('Frame '+(idx+1)+(frame.comment?' — '+frame.comment:''), ox+6, oy+fh+15);
+    });
+    var a=document.createElement('a'); a.download='traningsplan-frames.png'; a.href=fc.toDataURL('image/png'); a.click();
+  }
 }
 
 function exportPDF(){
   if(!window.jspdf){alert('PDF-biblioteket laddas fortfarande. Vänta en sekund och försök igen.');return;}
   try{
     var jsPDF=window.jspdf.jsPDF;
-    var imgData=canvas.toDataURL('image/png');
+    var frames=getExportFrames();
     var pdfW=297,pdfH=210;
     var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    var asp=canvas.width/canvas.height;
-    var imgW=pdfW*0.60,imgH=imgW/asp;
-    if(imgH>pdfH-20){imgH=pdfH-20;imgW=imgH*asp;}
-    doc.addImage(imgData,'PNG',10,10,imgW,imgH);
-    var colX=10+imgW+8,colW=pdfW-colX-8,y=16;
-    doc.setFont('helvetica','bold');doc.setFontSize(12);
-    doc.setTextColor(245,200,66);doc.text('Träningsplan',colX,y);y+=7;
-    doc.setDrawColor(245,200,66);doc.setLineWidth(0.3);
-    doc.line(colX,y,colX+colW,y);y+=5;
-    if(S.steps.length){
-      S.steps.forEach(function(s){
-        if(y>pdfH-10) return;
-        doc.setFillColor(25,70,40);doc.rect(colX,y-3.5,colW,6,'F');
-        doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);
-        doc.text(s.num+'.  '+s.title,colX+2,y);y+=6;
-        if(s.comment&&y<pdfH-8){
-          doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(190,215,190);
-          var lines=doc.splitTextToSize(s.comment,colW-5);
-          lines.forEach(function(line){if(y<pdfH-8){doc.text(line,colX+4,y);y+=4.5;}});
-          y+=2;
-        }
-      });
-    } else {
-      doc.setFont('helvetica','italic');doc.setFontSize(9);doc.setTextColor(140,140,140);
-      doc.text('Inga moment tillagda',colX,y);
-    }
-    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,100);
-    doc.text('Träningsplaneraren  ·  '+new Date().toLocaleDateString('sv-SE'),10,pdfH-4);
+
+    frames.forEach(function(frame, idx){
+      if(idx>0) doc.addPage();
+
+      // Render this frame
+      var oc = renderFrameToCanvas(frame);
+      var imgData = oc.toDataURL('image/png');
+
+      var asp=oc.width/oc.height;
+      var imgW=pdfW*0.62, imgH=imgW/asp;
+      if(imgH>pdfH-18){imgH=pdfH-18;imgW=imgH*asp;}
+      doc.addImage(imgData,'PNG',10,10,imgW,imgH);
+
+      // Right column
+      var colX=10+imgW+8, colW=pdfW-colX-8, y=16;
+      doc.setFont('helvetica','bold'); doc.setFontSize(12);
+      doc.setTextColor(245,200,66);
+      var title = frames.length>1 ? 'Frame '+(idx+1)+' / '+frames.length : 'Träningsplan';
+      doc.text(title, colX, y); y+=7;
+      doc.setDrawColor(245,200,66); doc.setLineWidth(0.3);
+      doc.line(colX,y,colX+colW,y); y+=5;
+
+      // Frame comment if any
+      if(frame.comment){
+        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(200,220,200);
+        var clines=doc.splitTextToSize(frame.comment,colW-4);
+        clines.forEach(function(l){if(y<pdfH-10){doc.text(l,colX,y);y+=4.5;}});
+        y+=3;
+      }
+
+      // Steps (only on first frame or if single frame)
+      if(idx===0 && S.steps.length){
+        S.steps.forEach(function(s){
+          if(y>pdfH-10) return;
+          doc.setFillColor(25,70,40); doc.rect(colX,y-3.5,colW,6,'F');
+          doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(255,255,255);
+          doc.text(s.num+'.  '+s.title,colX+2,y); y+=6;
+          if(s.comment&&y<pdfH-8){
+            doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(190,215,190);
+            var lines=doc.splitTextToSize(s.comment,colW-5);
+            lines.forEach(function(line){if(y<pdfH-8){doc.text(line,colX+4,y);y+=4.5;}});
+            y+=2;
+          }
+        });
+      } else if(idx===0){
+        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(140,140,140);
+        doc.text('Inga moment tillagda',colX,y);
+      }
+
+      // Footer
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,120,100);
+      doc.text('Träningsplaneraren  ·  '+new Date().toLocaleDateString('sv-SE')+(frames.length>1?' ·  Sida '+(idx+1)+'/'+frames.length:''),10,pdfH-4);
+    });
+
     doc.save('traningsplan.pdf');
   } catch(err){
     alert('PDF-export misslyckades: '+err.message+'\nAnvänd PNG istället.');
