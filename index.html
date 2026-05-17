@@ -3,119 +3,450 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Träningsplaneraren</title>
+<title>Dewpicked Football Coaching</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Barlow+Condensed:wght@500;600;700;900&display=swap');
+
   :root {
-    --accent: #f5c842; --text: #f0ede4;
-    --panel: #0f1a12; --panel2: #172019;
-    --border: rgba(255,255,255,0.11); --green-dark: #162a1c;
+    --accent:       #7ee8a2;
+    --accent-dim:   rgba(126,232,162,0.12);
+    --accent-glow:  rgba(126,232,162,0.25);
+    --text:         #e8eae6;
+    --text-muted:   rgba(232,234,230,0.38);
+    --text-dim:     rgba(232,234,230,0.6);
+    --bg:           #0d1511;
+    --surface:      #131d16;
+    --surface2:     #192320;
+    --surface3:     #1f2d24;
+    --border:       rgba(255,255,255,0.07);
+    --border-mid:   rgba(255,255,255,0.12);
+    --header-h:     48px;
+    --sidebar-w:    172px;
+    --steps-w:      206px;
+    --radius:       5px;
+    --radius-sm:    3px;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; }
-  body { font-family: 'Barlow', sans-serif; background: var(--panel); color: var(--text); display: flex; flex-direction: column; }
-  header { background: var(--green-dark); border-bottom: 2px solid var(--accent); padding: 7px 14px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-  header h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); }
-  .header-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
-  .btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 12px; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .btn-primary { background: var(--accent); color: #111; }
-  .btn-primary:hover { background: #ffd84a; }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-  .app-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-  .toolbox { width: 176px; background: var(--panel2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-  .toolbox-section { padding: 9px 10px; border-bottom: 1px solid var(--border); }
-  .toolbox-title { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 7px; }
-  .pitch-selector { display: flex; flex-direction: column; gap: 3px; }
-  .pitch-option { padding: 6px 9px; border-radius: 3px; border: 1px solid var(--border); cursor: pointer; font-size: 11px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; transition: all 0.15s; background: transparent; color: var(--text); text-align: left; }
-  .pitch-option:hover { border-color: var(--accent); }
-  .pitch-option.active { background: var(--accent); color: #111; border-color: var(--accent); }
-  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
-  .tool-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 3px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; background: transparent; color: var(--text); font-size: 9px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; transition: all 0.15s; }
-  .tool-btn:hover { border-color: var(--accent); background: rgba(245,200,66,0.08); }
-  .tool-btn.active { border-color: var(--accent); background: rgba(245,200,66,0.15); color: var(--accent); }
-  .tool-btn svg { width: 22px; height: 22px; }
-  .player-count { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-  .player-count label { font-size: 11px; color: rgba(255,255,255,0.45); flex: 1; }
-  .player-count input { width: 44px; background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 3px 6px; border-radius: 3px; font-size: 12px; text-align: center; }
-  .color-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-  .color-swatch { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
-  .color-swatch.active { border-color: white; transform: scale(1.2); }
-  .canvas-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0a1209; overflow: hidden; position: relative; }
-  #pitch-canvas { display: block; touch-action: none; }
-  .hint-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); padding: 3px 14px; border-radius: 20px; font-size: 11px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px; color: rgba(255,255,255,0.45); pointer-events: none; white-space: nowrap; }
-  .legend { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; font-size: 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.55); }
-  .steps-panel { width: 235px; background: var(--panel2); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
-  .steps-header { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-  .steps-header h2 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; flex: 1; }
-  .steps-list { flex: 1; overflow-y: auto; padding: 7px; display: flex; flex-direction: column; gap: 5px; }
-  .step-empty { text-align: center; color: rgba(255,255,255,0.18); font-size: 11px; padding: 20px 0; }
-  .step-card { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 7px 9px; cursor: pointer; transition: all 0.15s; position: relative; }
-  .step-card:hover { border-color: rgba(255,255,255,0.22); }
-  .step-card.active { border-color: var(--accent); background: rgba(245,200,66,0.07); }
-  .step-num { display: inline-block; width: 18px; height: 18px; background: var(--accent); color: #111; border-radius: 50%; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 11px; text-align: center; line-height: 18px; margin-right: 5px; flex-shrink: 0; }
-  .step-card-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; display: flex; align-items: center; margin-bottom: 3px; }
-  .step-card-comment { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.4; margin-left: 23px; }
-  .step-delete { position: absolute; top: 5px; right: 6px; background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; font-size: 13px; line-height: 1; padding: 0; }
-  .step-delete:hover { color: #e74c3c; }
-  .add-step-area { padding: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
-  .add-step-area input, .add-step-area textarea { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 3px; padding: 5px 7px; font-size: 11px; font-family: 'Barlow', sans-serif; resize: none; width: 100%; }
-  .add-step-area input:focus, .add-step-area textarea:focus { outline: none; border-color: var(--accent); }
-  .add-step-area textarea { height: 48px; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  /* FILMSTRIP */
-  .filmstrip-bar { background: #0a1209; border-top: 1px solid var(--border); padding: 6px 8px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; overflow-x: auto; }
+  /* ── HEADER ─────────────────────────────── */
+  header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent) 0%, transparent 60%);
+    opacity: 0.5;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+  .logo-text .brand {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .logo-text .sub {
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .header-divider {
+    width: 1px; height: 20px;
+    background: var(--border-mid);
+    flex-shrink: 0;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 5px; align-items: center; }
+
+  /* ── BUTTONS ─────────────────────────────── */
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11.5px;
+    letter-spacing: 0.2px;
+    padding: 5px 13px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.14s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a1a0f;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #9df0b8; box-shadow: 0 0 0 3px var(--accent-glow); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-dim);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .btn-icon {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── LAYOUT ─────────────────────────────── */
+  .app-body { display: flex; flex: 1; overflow: hidden; min-height: 0; flex-direction: row; }
+  .left-sidebar {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  /* ── TOOLBOX ─────────────────────────────── */
+  .toolbox {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+  .toolbox-section {
+    padding: 10px 11px;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbox-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .pitch-selector { display: flex; flex-direction: column; gap: 2px; }
+  .pitch-option {
+    padding: 6px 9px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    transition: all 0.12s;
+    background: transparent;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .pitch-option:hover { background: var(--surface3); color: var(--text); border-color: var(--border); }
+  .pitch-option.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(126,232,162,0.3);
+    font-weight: 500;
+  }
+
+  /* ── TOOL GRID ─────────────────────────────── */
+  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+  .tool-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 7px 3px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 8.5px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    transition: all 0.12s;
+  }
+  .tool-btn:hover { border-color: var(--border-mid); background: var(--surface3); color: var(--text-dim); }
+  .tool-btn.active {
+    border-color: rgba(126,232,162,0.4);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .tool-btn svg { width: 20px; height: 20px; }
+
+  /* ── INPUTS ─────────────────────────────── */
+  .player-count { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .player-count label { font-size: 11px; color: var(--text-muted); flex: 1; font-weight: 400; }
+  .player-count input, .add-step-area input, .add-step-area textarea {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    transition: border-color 0.12s;
+  }
+  .player-count input { width: 44px; padding: 3px 6px; text-align: center; }
+  .add-step-area input { padding: 6px 8px; width: 100%; resize: none; }
+  .add-step-area textarea { padding: 6px 8px; width: 100%; resize: none; height: 50px; }
+  .player-count input:focus, .add-step-area input:focus, .add-step-area textarea:focus {
+    outline: none; border-color: var(--accent);
+  }
+
+  /* ── COLOURS ─────────────────────────────── */
+  .color-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .color-swatch {
+    width: 19px; height: 19px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.12s;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.active { border-color: var(--text); box-shadow: 0 0 0 1px var(--border-mid); transform: scale(1.18); }
+
+  /* ── CANVAS ─────────────────────────────── */
+  .canvas-area {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #0b1610; overflow: hidden; position: relative;
+  }
+  #pitch-canvas { display: block; touch-action: none; }
+  .hint-bar {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+    padding: 4px 16px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.3px;
+    color: var(--text-muted); pointer-events: none; white-space: nowrap;
+    border: 1px solid var(--border);
+  }
+  .legend {
+    position: absolute; bottom: 10px; left: 10px;
+    background: rgba(10,20,13,0.82); backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 12px;
+    font-size: 10px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; color: var(--text-muted); font-weight: 400; }
+
+  /* ── STEPS PANEL ─────────────────────────────── */
+  .steps-panel {
+    width: var(--steps-w);
+    background: var(--surface);
+    display: flex; flex-direction: column; flex-shrink: 0;
+    border-right: 1px solid var(--border);
+  }
+  .steps-header {
+    padding: 11px 12px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .steps-header h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600; font-size: 11px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-dim); flex: 1;
+  }
+  .steps-list {
+    flex: 1; overflow-y: auto; padding: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .step-empty {
+    text-align: center; color: var(--text-muted);
+    font-size: 11px; padding: 24px 0; line-height: 1.6;
+  }
+  .step-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    cursor: pointer; transition: all 0.12s; position: relative;
+  }
+  .step-card:hover { border-color: var(--border-mid); background: var(--surface3); }
+  .step-card.active {
+    border-color: rgba(126,232,162,0.35);
+    background: var(--accent-dim);
+  }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    background: var(--accent); color: #0a1a0f;
+    border-radius: 50%;
+    font-family: 'Inter', sans-serif; font-weight: 700;
+    font-size: 10px; margin-right: 6px; flex-shrink: 0;
+  }
+  .step-card-title {
+    font-size: 11.5px; font-weight: 500;
+    display: flex; align-items: center; margin-bottom: 3px;
+    color: var(--text);
+  }
+  .step-card-comment { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; margin-left: 24px; }
+  .step-delete {
+    position: absolute; top: 6px; right: 7px;
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 12px; line-height: 1; padding: 0; opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .step-card:hover .step-delete { opacity: 1; }
+  .step-delete:hover { color: #f87171; }
+  .add-step-area {
+    padding: 9px; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 5px;
+  }
+
+  /* ── FILMSTRIP ─────────────────────────────── */
+  .filmstrip-bar {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 7px 10px; display: flex; align-items: center; gap: 7px;
+    flex-shrink: 0; overflow-x: auto;
+  }
   .filmstrip-bar.hidden { display: none; }
-  .frame-thumb { position: relative; flex-shrink: 0; cursor: pointer; border: 2px solid var(--border); border-radius: 3px; overflow: hidden; transition: border-color 0.15s; }
-  .frame-thumb:hover { border-color: rgba(255,255,255,0.4); }
-  .frame-thumb.active { border-color: var(--accent); }
+  .frame-thumb {
+    position: relative; flex-shrink: 0; cursor: pointer;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    overflow: hidden; transition: border-color 0.12s;
+  }
+  .frame-thumb:hover { border-color: var(--border-mid); }
+  .frame-thumb.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow); }
   .frame-thumb canvas { display: block; }
-  .frame-thumb .frame-num { position: absolute; bottom: 2px; left: 3px; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; color: white; text-shadow: 0 0 4px #000; pointer-events: none; }
-  .frame-thumb .frame-del { position: absolute; top: 1px; right: 2px; background: rgba(0,0,0,0.6); border: none; color: rgba(255,255,255,0.5); font-size: 11px; line-height: 1; padding: 1px 3px; cursor: pointer; border-radius: 2px; display: none; }
+  .frame-thumb .frame-num {
+    position: absolute; bottom: 2px; left: 4px;
+    font-size: 10px; font-weight: 600; color: white;
+    text-shadow: 0 1px 3px #000; pointer-events: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .frame-thumb .frame-del {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.65); border: none;
+    color: rgba(255,255,255,0.5); font-size: 10px;
+    line-height: 1; padding: 2px 4px; cursor: pointer;
+    border-radius: 2px; display: none;
+  }
   .frame-thumb:hover .frame-del { display: block; }
-  .frame-thumb .frame-del:hover { color: #e74c3c; }
-  .frame-add-btn { flex-shrink: 0; width: 56px; height: 40px; border: 1px dashed rgba(255,255,255,0.2); border-radius: 3px; background: transparent; color: rgba(255,255,255,0.35); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-  .frame-add-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .team-picker { display: flex; gap: 5px; }
+  .frame-thumb .frame-del:hover { color: #f87171; }
+  .frame-add-btn {
+    flex-shrink: 0; width: 58px; height: 42px;
+    border: 1px dashed var(--border-mid); border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-muted);
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .frame-add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+  /* ── TEAM PICKER ─────────────────────────────── */
+  .team-picker { display: flex; gap: 4px; }
   .team-pick-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    padding: 7px 4px; border-radius: 4px; border: 2px solid var(--border);
-    background: transparent; color: rgba(255,255,255,0.5);
-    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
-    letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; transition: all 0.15s;
+    padding: 7px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted);
+    font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600;
+    letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; transition: all 0.12s;
   }
-  .team-pick-btn:hover { border-color: rgba(255,255,255,0.3); }
-  .team-pick-btn.active { border-color: var(--accent); background: rgba(245,200,66,0.1); color: var(--accent); }
-    .free-format-picker.hidden { display: none; }
+  .team-pick-btn:hover { border-color: var(--border-mid); background: var(--surface3); color: var(--text-dim); }
+  .team-pick-btn.active { border-color: rgba(126,232,162,0.4); background: var(--accent-dim); color: var(--accent); }
+  .team-color-row { display:flex; align-items:center; gap:6px; margin-top:8px; }
+  .team-color-row label { font-size:10px; color:var(--text-muted); font-weight:400; }
+  .team-color-row input[type=color] { width:28px; height:22px; border:1px solid var(--border); border-radius:var(--radius-sm); background:none; padding:1px; cursor:pointer; }
+
+  /* ── FREE FORMAT ─────────────────────────────── */
+  .free-format-picker.hidden { display: none; }
   .free-fmt-btn {
     display:flex; align-items:center; justify-content:center;
-    padding:5px; border-radius:3px; border:1px solid var(--border);
-    background:transparent; color:rgba(255,255,255,0.5); cursor:pointer;
-    transition:all 0.15s; flex:1;
+    padding:5px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:transparent; color:var(--text-muted); cursor:pointer;
+    transition:all 0.12s; flex:1;
   }
-  .free-fmt-btn:hover { border-color:var(--accent); }
-  .free-fmt-btn.active { border-color:var(--accent); background:rgba(245,200,66,0.15); color:var(--accent); }
-    .team-color-row { display:flex; align-items:center; gap:6px; margin-top:8px; }
-  .team-color-row label { font-size:10px; color:rgba(255,255,255,0.4); }
-  .team-color-row input[type=color] { width:28px; height:22px; border:1px solid var(--border); border-radius:3px; background:none; padding:1px; cursor:pointer; }
-    ::-webkit-scrollbar { width: 3px; }
+  .free-fmt-btn:hover { border-color:var(--border-mid); background:var(--surface3); }
+  .free-fmt-btn.active { border-color:rgba(126,232,162,0.4); background:var(--accent-dim); color:var(--accent); }
+
+  /* ── CONES ─────────────────────────────── */
+  .cone-shape-btn {
+    padding:5px 7px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:transparent; cursor:pointer; transition:all 0.12s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cone-shape-btn:hover { border-color:var(--border-mid); background:var(--surface3); }
+  .cone-shape-btn.active { border-color:rgba(126,232,162,0.4); background:var(--accent-dim); }
+  .cone-colors { display:flex; gap:5px; flex-wrap:wrap; }
+  .cone-color-swatch { width:20px; height:20px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all 0.12s; }
+  .cone-color-swatch:hover { transform:scale(1.15); }
+  .cone-color-swatch.active { border-color:var(--text); transform:scale(1.18); }
+
+  /* ── SCROLLBARS ─────────────────────────────── */
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
 <header>
-  <h1>&#9917; Träningsplaneraren</h1>
+  <div class="logo">
+    <div class="logo-mark">⚽</div>
+    <div class="logo-text">
+      <span class="brand">Dewpicked</span>
+      <span class="sub">Football Coaching</span>
+    </div>
+  </div>
+  <div class="header-divider"></div>
   <div class="header-actions">
-    <button class="btn btn-ghost" onclick="undoLast()">&#x21A9; Ångra</button>
-    <button class="btn btn-ghost" onclick="clearCanvas()">Rensa</button>
-    <button class="btn btn-ghost" onclick="exportPNG()">&#8595; PNG</button>
-    <button class="btn btn-primary" onclick="exportPDF()">&#8595; PDF</button>
+    <button class="btn btn-icon" onclick="undoLast()" title="Ångra (Ctrl+Z)">↩</button>
+    <button class="btn btn-ghost" onclick="clearCanvas()" title="Rensa plan">✕ Rensa</button>
+    <div class="header-divider"></div>
+    <button class="btn btn-ghost" onclick="exportPNG(false)">↓ PNG</button>
+    <button class="btn btn-ghost" onclick="exportPNG(true)" title="Svartvit utskrift">↓ PNG B&W</button>
+    <div class="header-divider"></div>
+    <button class="btn btn-primary" onclick="exportPDF(false)">↓ PDF</button>
+    <button class="btn btn-ghost" onclick="exportPDF(true)" title="Svartvit utskrift">↓ PDF B&W</button>
   </div>
 </header>
 <div class="app-body">
+  <div class="left-sidebar">
   <div class="toolbox">
     <div class="toolbox-section">
       <div class="toolbox-title">Plantyp</div>
@@ -148,7 +479,7 @@
           Spelare
         </button>
         <button class="tool-btn" id="tool-cone" onclick="setTool('cone')">
-          <svg viewBox="0 0 24 24"><polygon points="12,3 20,20 4,20" fill="#ff6b1a"/><rect x="3" y="19" width="18" height="2" rx="1" fill="#cc4400"/></svg>
+          <svg id="cone-btn-icon" viewBox="0 0 24 24"><polygon points="12,3 20,20 4,20" fill="#ff6b1a"/><rect x="3" y="19" width="18" height="2" rx="1" fill="#cc4400"/></svg>
           Kon
         </button>
         <button class="tool-btn" id="tool-pass" onclick="setTool('pass')">
@@ -167,6 +498,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="18" x2="21" y2="6"/></svg>
           Streck
         </button>
+        <button class="tool-btn" id="tool-dashedline" onclick="setTool('dashedline')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,3"><line x1="3" y1="18" x2="21" y2="6"/></svg>
+          Streck--
+        </button>
         <button class="tool-btn" id="tool-ball" onclick="setTool('ball')">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="white" stroke="#555" stroke-width="1.5"/><path d="M12 4 L14 8 L12 11 L10 8 Z" fill="#333"/><circle cx="12" cy="12" r="2" fill="#333"/></svg>
           Boll
@@ -179,13 +514,25 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17 L8 22 L21 9 L16 4 Z" fill="rgba(255,100,100,0.3)"/><line x1="3" y1="22" x2="21" y2="22"/></svg>
           Radera
         </button>
+        <button class="tool-btn" id="tool-text" onclick="setTool('text')">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="5" width="16" height="2" rx="1"/><rect x="4" y="10" width="12" height="2" rx="1"/><rect x="4" y="15" width="14" height="2" rx="1"/></svg>
+          Text
+        </button>
+        <button class="tool-btn" id="tool-rect" onclick="setTool('rect')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+          Rektangel
+        </button>
+        <button class="tool-btn" id="tool-dashedrect" onclick="setTool('dashedrect')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,3"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+          Rekt--
+        </button>
       </div>
     </div>
     <div class="toolbox-section">
       <div class="toolbox-title">Välj lag</div>
       <div class="team-picker">
         <button class="team-pick-btn active" id="pick-A" onclick="setActiveTeam('A')">
-          <svg id="jersey-icon-A" viewBox="0 0 24 24" width="22" height="22"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#550080"/><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></svg>
+          <svg id="jersey-icon-A" viewBox="0 0 24 24" width="22" height="22"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#5a28be"/><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></svg>
           <span>Team A</span>
         </button>
         <button class="team-pick-btn" id="pick-B" onclick="setActiveTeam('B')">
@@ -195,7 +542,7 @@
       </div>
       <div class="team-color-row">
         <label>Färg A:</label>
-        <input type="color" id="colorA" value="#550080" oninput="setTeamColor('A',this.value)" title="Välj färg Team A">
+        <input type="color" id="colorA" value="#5a28be" oninput="setTeamColor('A',this.value)" title="Välj färg Team A">
         <label>Färg B:</label>
         <input type="color" id="colorB" value="#e8e8e8" oninput="setTeamColor('B',this.value)" title="Välj färg Team B">
       </div>
@@ -208,11 +555,12 @@
     <div class="toolbox-section">
       <div class="toolbox-title">Linjefärg</div>
       <div class="color-row">
-        <div class="color-swatch active" style="background:#ffffff" onclick="setLineColor('#ffffff')" data-color="#ffffff"></div>
+        <div class="color-swatch" style="background:#ffffff" onclick="setLineColor('#ffffff')" data-color="#ffffff"></div>
         <div class="color-swatch" style="background:#f5c842" onclick="setLineColor('#f5c842')" data-color="#f5c842"></div>
         <div class="color-swatch" style="background:#e8540a" onclick="setLineColor('#e8540a')" data-color="#e8540a"></div>
         <div class="color-swatch" style="background:#3498db" onclick="setLineColor('#3498db')" data-color="#3498db"></div>
         <div class="color-swatch" style="background:#2ecc71" onclick="setLineColor('#2ecc71')" data-color="#2ecc71"></div>
+        <div class="color-swatch active" style="background:#111111;border:1px solid rgba(255,255,255,0.2)" onclick="setLineColor('#111111')" data-color="#111111"></div>
       </div>
     </div>
     <div class="toolbox-section">
@@ -226,24 +574,7 @@
     </div>
   </div>
 
-  <div class="canvas-area" id="canvas-area">
-    <canvas id="pitch-canvas"></canvas>
-    <div class="hint-bar" id="hint-bar">Välj verktyg och tryck på planen</div>
-    <div class="legend">
-      <div class="legend-item">
-        <svg width="26" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="white" stroke-width="2"/><polygon points="15,1 20,4 15,7" fill="white"/></svg>Pass
-      </div>
-      <div class="legend-item">
-        <svg width="26" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="white" stroke-width="2" stroke-dasharray="5,3"/><polygon points="15,1 20,4 15,7" fill="white"/></svg>Rörelse
-      </div>
-      <div class="legend-item">
-        <svg width="30" height="10"><path d="M0,5 Q4,1 8,5 Q12,9 16,5 Q20,1 24,5" stroke="white" stroke-width="2" fill="none"/><polygon points="21,2 25,5 21,8" fill="white"/></svg>Dribbling
-      </div>
-      <div class="legend-item">
-        <svg width="26" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="white" stroke-width="2"/></svg>Streck
-      </div>
-    </div>
-  </div>
+
 
   <div class="steps-panel">
     <div class="steps-header">
@@ -260,6 +591,26 @@
     </div>
 
     <div class="toolbox-section">
+      <div class="toolbox-title">Kon</div>
+      <div style="display:flex;gap:4px;margin-bottom:8px;">
+        <button class="cone-shape-btn active" id="coneshape-tall" onclick="setConeShape('tall')" title="Hög kon">
+          <svg viewBox="0 0 20 22" width="22" height="22"><polygon points="10,2 18,20 2,20" fill="var(--cone-preview-color,#ff6b1a)"/><rect x="1" y="19" width="18" height="2" rx="1" fill="rgba(0,0,0,0.3)"/></svg>
+        </button>
+        <button class="cone-shape-btn" id="coneshape-flat" onclick="setConeShape('flat')" title="Flatkon">
+          <svg viewBox="0 0 24 14" width="30" height="18"><ellipse cx="12" cy="8" rx="10" ry="5" fill="var(--cone-preview-color,#ff6b1a)"/><ellipse cx="12" cy="8" rx="10" ry="5" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="1"/></svg>
+        </button>
+      </div>
+      <div class="toolbox-title" style="margin-bottom:5px;">Konfärg</div>
+      <div class="cone-colors">
+        <div class="cone-color-swatch active" style="background:#ff6b1a" onclick="setConeColor('#ff6b1a')" data-conecolor="#ff6b1a" title="Orange"></div>
+        <div class="cone-color-swatch" style="background:#f5c842" onclick="setConeColor('#f5c842')" data-conecolor="#f5c842" title="Gul"></div>
+        <div class="cone-color-swatch" style="background:#e74c3c" onclick="setConeColor('#e74c3c')" data-conecolor="#e74c3c" title="Röd"></div>
+        <div class="cone-color-swatch" style="background:#3498db" onclick="setConeColor('#3498db')" data-conecolor="#3498db" title="Blå"></div>
+        <div class="cone-color-swatch" style="background:#2ecc71" onclick="setConeColor('#2ecc71')" data-conecolor="#2ecc71" title="Grön"></div>
+        <div class="cone-color-swatch" style="background:#ffffff;border:1px solid rgba(255,255,255,0.2)" onclick="setConeColor('#ffffff')" data-conecolor="#ffffff" title="Vit"></div>
+      </div>
+    </div>
+    <div class="toolbox-section">
       <div class="toolbox-title">Frames</div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:rgba(255,255,255,0.6);">
         <input type="checkbox" id="multiframe-toggle" onchange="toggleMultiframe(this.checked)" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;">
@@ -267,20 +618,48 @@
       </label>
       <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:5px;">Varje frame är en<br>egen planritning</div>
     </div>
+  </div><!-- end steps-panel -->
+  </div><!-- end left-sidebar -->
+  <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
+  <div class="canvas-area" id="canvas-area">
+    <canvas id="pitch-canvas"></canvas>
+    <div class="hint-bar" id="hint-bar">Välj verktyg och tryck på planen</div>
+    <div class="legend">
+      <div class="legend-item">
+        <svg width="26" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="white" stroke-width="2"/><polygon points="15,1 20,4 15,7" fill="white"/></svg>Pass
+      </div>
+      <div class="legend-item">
+        <svg width="26" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="white" stroke-width="2" stroke-dasharray="5,3"/><polygon points="15,1 20,4 15,7" fill="white"/></svg>Rörelse
+      </div>
+      <div class="legend-item">
+        <svg width="30" height="10"><path d="M0,5 Q4,1 8,5 Q12,9 16,5 Q20,1 24,5" stroke="white" stroke-width="2" fill="none"/><polygon points="21,2 25,5 21,8" fill="white"/></svg>Dribbling
+      </div>
+      <div class="legend-item">
+        <svg width="26" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="white" stroke-width="2"/></svg>Streck
+      </div>
+      <div class="legend-item">
+        <svg width="26" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="white" stroke-width="2" stroke-dasharray="6,4"/></svg>Streckad
+      </div>
+      <div class="legend-item">
+        <svg width="22" height="14"><rect x="1" y="1" width="20" height="12" fill="none" stroke="white" stroke-width="2"/></svg>Rektangel
+      </div>
+    </div>
   </div>
-
 <div class="filmstrip-bar hidden" id="filmstrip-bar">
   <button class="frame-add-btn" onclick="addFrame()" title="Ny frame">+</button>
+</div>
+  </div><!-- end canvas column -->
+
 </div>
 
 <script>
 var canvas = document.getElementById('pitch-canvas');
 var ctx = canvas.getContext('2d');
 var S = {
-  pitch:'full', tool:'player', lineColor:'#ffffff',
+  pitch:'full', tool:'player', lineColor:'#111111',
   elements:[], steps:[], lineStart:null,
   dragging:null, dragOffX:0, dragOffY:0,
-  history:[], activeStep:null, mouse:null, activeTeam:'A', freeFormat:'square', teamColors:{A:'#550080',B:'#e8e8e8'},
+  history:[], activeStep:null, mouse:null, activeTeam:'A', freeFormat:'square', teamColors:{A:'#5a28be',B:'#e8e8e8'}, coneShape:'tall', coneColor:'#ff6b1a', _exporting:false, _bw:false,
   multiframe:false,
   frames:[], currentFrame:0
 };
@@ -401,7 +780,7 @@ function renderMiniature(tc, frame) {
       tctx.fillStyle=el.team==='A'?S.teamColors.A:S.teamColors.B;
       tctx.beginPath();tctx.arc(ex,ey,2.5,0,Math.PI*2);tctx.fill();
     } else if(el.type==='cone'){
-      tctx.fillStyle='#ff6b1a';
+      tctx.fillStyle='#ff6b1a'; // always orange
       tctx.beginPath();tctx.arc(ex,ey,1.5,0,Math.PI*2);tctx.fill();
     } else if(el.type==='ball'){
       tctx.fillStyle='white';
@@ -430,6 +809,124 @@ function setTeamColor(team, color) {
   var icon = document.getElementById('jersey-icon-'+team);
   if (icon) icon.querySelector('path').setAttribute('fill', color);
   drawAll();
+}
+
+function setConeShape(shape) {
+  S.coneShape = shape;
+  document.querySelectorAll('.cone-shape-btn').forEach(function(b){b.classList.remove('active');});
+  var btn = document.getElementById('coneshape-'+shape);
+  if(btn) btn.classList.add('active');
+  // Update cone tool button icon
+  updateConeIcon();
+}
+
+function setConeColor(color) {
+  S.coneColor = color;
+  document.querySelectorAll('.cone-color-swatch').forEach(function(s){s.classList.remove('active');});
+  var sw = document.querySelector('[data-conecolor="'+color+'"]');
+  if(sw) sw.classList.add('active');
+  updateConeIcon();
+}
+
+function updateConeIcon() {
+  // Update the SVG fill in the cone tool button to reflect current color+shape
+  var icon = document.getElementById('cone-btn-icon');
+  if(!icon) return;
+  if(S.coneShape==='flat'){
+    icon.setAttribute('viewBox','0 0 24 24');
+    icon.innerHTML = '<ellipse cx="12" cy="14" rx="9" ry="5" fill="'+S.coneColor+'"/><ellipse cx="12" cy="14" rx="9" ry="5" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>';
+  } else {
+    icon.setAttribute('viewBox','0 0 24 24');
+    icon.innerHTML = '<polygon points="12,3 20,20 4,20" fill="'+S.coneColor+'"/><rect x="3" y="19" width="18" height="2" rx="1" fill="rgba(0,0,0,0.3)"/>';
+  }
+}
+
+
+function startTextEdit(px, py, mx, my, d) {
+  // Remove any existing editor
+  var old = document.getElementById('dfc-text-editor');
+  if (old) old.parentNode.removeChild(old);
+
+  var area = document.getElementById('canvas-area');
+  var ar   = area.getBoundingClientRect();
+
+  // Build editor
+  var wrap = document.createElement('div');
+  wrap.id  = 'dfc-text-editor';
+  wrap.style.cssText = [
+    'position:fixed',
+    'left:'  + (ar.left + px) + 'px',
+    'top:'   + (ar.top  + py - 4) + 'px',
+    'z-index:300',
+    'display:flex',
+    'flex-direction:column',
+    'gap:4px'
+  ].join(';');
+
+  var ta = document.createElement('textarea');
+  ta.rows = 3;
+  ta.placeholder = 'Skriv text…';
+  ta.style.cssText = [
+    'background:rgba(10,20,13,0.95)',
+    'border:1.5px solid rgba(126,232,162,0.7)',
+    'color:#e8eae6',
+    'font-family:Inter,Arial,sans-serif',
+    'font-size:13px',
+    'font-weight:600',
+    'line-height:1.4',
+    'padding:6px 10px',
+    'border-radius:4px',
+    'outline:none',
+    'resize:none',
+    'width:190px',
+    'min-height:58px',
+    'box-shadow:0 6px 24px rgba(0,0,0,0.6)',
+    'backdrop-filter:blur(8px)'
+  ].join(';');
+
+  var hint = document.createElement('div');
+  hint.textContent = 'Enter = klar  ·  Shift+Enter = ny rad  ·  Esc = avbryt';
+  hint.style.cssText = 'font-size:9px;color:rgba(126,232,162,0.5);padding-left:2px;font-family:Inter,Arial,sans-serif;';
+
+  wrap.appendChild(ta);
+  wrap.appendChild(hint);
+  document.body.appendChild(wrap);
+
+  // Store position on the wrapper (not on ta, avoids property issues)
+  wrap._mx = mx; wrap._my = my;
+  wrap._col = (S.lineColor === '#111111' || S.lineColor === '#000000') ? '#ffffff' : S.lineColor;
+
+  var done = false;
+
+  function commit() {
+    if (done) return;
+    done = true;
+    var txt = ta.value.trim();
+    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    if (txt) {
+      push();
+      S.elements.push({ type:'text', x:wrap._mx, y:wrap._my, text:txt, color:wrap._col, size:14 });
+      drawAll();
+    }
+  }
+
+  function cancel() {
+    if (done) return;
+    done = true;
+    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+  }
+
+  ta.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commit(); }
+    if (e.key === 'Escape')               { e.preventDefault(); cancel(); }
+  });
+
+  ta.addEventListener('blur', function() {
+    // Small delay so click-outside doesn't race with keydown
+    setTimeout(commit, 120);
+  });
+
+  setTimeout(function() { ta.focus(); }, 20);
 }
 
 function resize() {
@@ -465,16 +962,18 @@ function inPitch(mx,my,d){ return mx>=0&&my>=0&&mx<=d.realW&&my<=d.realH; }
 function drawPitch(d) {
   var ox=d.ox, oy=d.oy, pw=d.pw, ph=d.ph, RW=d.realW, RH=d.realH;
   // Background
-  ctx.fillStyle='#1a5c28';
+  ctx.fillStyle=S._bw?'#ffffff':'#1a5c28';
   ctx.fillRect(ox,oy,pw,ph);
-  // Stripes
-  var ns=10, sh=ph/ns;
-  for(var i=0;i<ns;i++){
-    ctx.fillStyle=i%2===0?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.03)';
-    ctx.fillRect(ox,oy+i*sh,pw,sh);
+  // Stripes (skip in BW)
+  if(!S._bw){
+    var ns=10, sh=ph/ns;
+    for(var i=0;i<ns;i++){
+      ctx.fillStyle=i%2===0?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.03)';
+      ctx.fillRect(ox,oy+i*sh,pw,sh);
+    }
   }
   // Lines
-  ctx.strokeStyle='rgba(255,255,255,0.88)';
+  ctx.strokeStyle=S._bw?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.88)';
   ctx.lineWidth=Math.max(1,pw/220);
   ctx.lineCap='round'; ctx.setLineDash([]);
 
@@ -492,7 +991,7 @@ function drawPitch(d) {
   }
   function dot(cx,cy){
     var c=m2p(cx,cy,d);
-    ctx.fillStyle='white';ctx.beginPath();ctx.arc(c.x,c.y,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=S._bw?'#000':'white';ctx.beginPath();ctx.arc(c.x,c.y,3,0,Math.PI*2);ctx.fill();
   }
 
   if(S.pitch!=='free') ctx.strokeRect(ox,oy,pw,ph);
@@ -559,7 +1058,12 @@ function drawPitch(d) {
 function drawJersey(px,py,num,color) {
   var w=22, h=32; // wider and taller — more elongated
   ctx.save(); ctx.translate(px,py);
-  ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.65)'; ctx.lineWidth=1.1;
+  // In BW mode: team A = dark grey, team B = white with black border
+  if(S._bw){
+    var isBright = (function(c){ var r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); return (r*299+g*587+b*114)/1000 > 140; })(color);
+    color = isBright ? '#f0f0f0' : '#2a2a2a';
+  }
+  ctx.fillStyle=color; ctx.strokeStyle=S._bw?'rgba(0,0,0,0.7)':'rgba(255,255,255,0.65)'; ctx.lineWidth=1.1;
   // Body — tall trapezoid
   ctx.beginPath();
   ctx.moveTo(-w*0.52, -h*0.06);
@@ -588,22 +1092,37 @@ function drawJersey(px,py,num,color) {
   // Pick number color based on jersey brightness
   var r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
   var brightness=(r*299+g*587+b*114)/1000;
-  ctx.fillStyle=brightness>140?'rgba(30,30,30,0.9)':'rgba(255,255,255,0.95)';
+  ctx.fillStyle=brightness>140?'rgba(20,20,20,0.9)':'rgba(255,255,255,0.95)';
   ctx.font='bold '+Math.round(h*0.38)+'px Barlow Condensed, sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(String(num),0,h*0.32);
   ctx.restore();
 }
 
-function drawCone(px,py,color) {
+function drawCone(px,py,color,shape) {
+  if(shape==='flat') { drawFlatCone(px,py,color); return; }
   var s=9; ctx.save(); ctx.translate(px,py);
-  ctx.fillStyle='rgba(0,0,0,0.28)';
-  ctx.beginPath();ctx.ellipse(0,s+1,s*0.6,3,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=color||'#ff6b1a'; ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=0.8;
   ctx.beginPath();ctx.moveTo(0,-s);ctx.lineTo(s,s);ctx.lineTo(-s,s);ctx.closePath();
   ctx.fill(); ctx.stroke();
   ctx.fillStyle='rgba(255,255,255,0.3)';
   ctx.beginPath();ctx.moveTo(-1,-s*0.1);ctx.lineTo(s*0.55,s);ctx.lineTo(s*0.25,s);ctx.lineTo(-s*0.28,-s*0.1);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function drawFlatCone(px,py,color) {
+  var rx=10, ry=5;
+  ctx.save(); ctx.translate(px,py);
+  // Outer disc
+  ctx.fillStyle=color||'#ff6b1a';
+  ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Inner highlight ring
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.ellipse(0,0,rx*0.55,ry*0.55,0,0,Math.PI*2); ctx.stroke();
+  // Centre dot
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.beginPath(); ctx.ellipse(0,0,2,1,0,0,Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
@@ -642,21 +1161,31 @@ function drawArrow(el,d,alpha) {
     var dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
     if(len>1){
       var nx=-dy/len,ny=dx/len,amp=5,freq=len/18;
+      // Reserve last 14px as a straight run-in so the arrow points cleanly forward
+      var straightPx=14;
+      var tStop=Math.max(0, (len-straightPx)/len);
       ctx.beginPath();ctx.moveTo(a.x,a.y);
-      var steps=Math.ceil(len/2);
+      var steps=Math.ceil(len*tStop/2);
       for(var i=1;i<=steps;i++){
-        var t=i/steps,wave=Math.sin(t*freq*Math.PI*2)*amp;
+        var t=i/steps*tStop;
+        var wave=Math.sin(t*freq*Math.PI*2)*amp;
         ctx.lineTo(a.x+dx*t+nx*wave,a.y+dy*t+ny*wave);
       }
+      // Straight segment to endpoint
+      ctx.lineTo(b.x,b.y);
       ctx.stroke();
     }
   } else if(el.type==='line'){
     ctx.setLineDash([]);
     ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  } else if(el.type==='dashedline'){
+    ctx.setLineDash([8,5]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    ctx.setLineDash([]);
   }
   ctx.setLineDash([]);
   // Only draw arrowhead for arrow types
-  if(el.type!=='line'){
+  if(el.type!=='line'&&el.type!=='dashedline'){
     var ang=Math.atan2(b.y-a.y,b.x-a.x),al=10,asp=0.38;
     ctx.fillStyle=el.color||'#fff';
     ctx.beginPath();
@@ -668,22 +1197,66 @@ function drawArrow(el,d,alpha) {
   ctx.restore();
 }
 
+function drawText(el, d) {
+  var p = m2p(el.x, el.y, d);
+  var scale = d.pw / 500;
+  var fs = Math.round((el.size || 14) * scale);
+  fs = Math.max(9, Math.min(fs, 52));
+  ctx.save();
+  ctx.font = 'bold ' + fs + 'px Inter,Arial,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  if (!S._bw) {
+    ctx.shadowColor = 'rgba(0,0,0,0.75)';
+    ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
+  }
+  ctx.fillStyle = S._bw ? '#111111' : (el.color || '#ffffff');
+  var lines = String(el.text).split('\n');
+  var lineH = fs * 1.3;
+  lines.forEach(function(line, i) {
+    ctx.fillText(line, p.x, p.y + i * lineH);
+  });
+  ctx.restore();
+}
+
+function drawRect(el, d, alpha) {
+  if (el.x2 == null) return;
+  var a = m2p(el.x,  el.y,  d);
+  var b = m2p(el.x2, el.y2, d);
+  var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+  var w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+  ctx.save();
+  ctx.globalAlpha = alpha != null ? alpha : 1;
+  ctx.strokeStyle = el.color || '#fff';
+  ctx.lineWidth   = 2.2;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  if (el.type === 'dashedrect') ctx.setLineDash([8, 5]);
+  else ctx.setLineDash([]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 function drawAll() {
   if(!canvas.width||!canvas.height) return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(S._bw){ ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
   var d=getDims();
   drawPitch(d);
   S.elements.forEach(function(el){
     var p=m2p(el.x,el.y,d);
     if(el.type==='player') drawJersey(p.x,p.y,el.num,el.team==='A'?S.teamColors.A:S.teamColors.B);
-    else if(el.type==='cone') drawCone(p.x,p.y,el.color);
+    else if(el.type==='cone') drawCone(p.x,p.y,el.color,el.shape);
     else if(el.type==='ball') drawBall(p.x,p.y);
+    else if(el.type==='text') drawText(el,d);
+    else if(el.type==='rect'||el.type==='dashedrect') drawRect(el,d);
     else drawArrow(el,d);
   });
-  if(S.multiframe&&S.frames.length){ S.frames[S.currentFrame].elements=JSON.parse(JSON.stringify(S.elements)); }
-  if(S.lineStart&&S.mouse&&(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line')){
+  if(S.multiframe&&S.frames.length&&!S._exporting){ S.frames[S.currentFrame].elements=JSON.parse(JSON.stringify(S.elements)); }
+  if(S.lineStart&&S.mouse&&(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line'||S.tool==='dashedline'||S.tool==='rect'||S.tool==='dashedrect')){
     var fe={type:S.tool,x:S.lineStart.x,y:S.lineStart.y,x2:S.mouse.x,y2:S.mouse.y,color:S.lineColor};
-    drawArrow(fe,d,0.45);
+    if(S.tool==='rect'||S.tool==='dashedrect') drawRect(fe,d,0.5); else drawArrow(fe,d,0.45);
     var sp=m2p(S.lineStart.x,S.lineStart.y,d);
     ctx.fillStyle=S.lineColor;ctx.beginPath();ctx.arc(sp.x,sp.y,4,0,Math.PI*2);ctx.fill();
   }
@@ -726,14 +1299,16 @@ function onDown(e) {
   }
   if(S.tool==='cone'){
     push();
-    var c=S.lineColor==='#ffffff'?'#ff6b1a':S.lineColor;
-    S.elements.push({type:'cone',x:mx,y:my,color:c});
+    S.elements.push({type:'cone',x:mx,y:my,color:S.coneColor,shape:S.coneShape});
     drawAll();return;
   }
   if(S.tool==='ball'){
     push();S.elements.push({type:'ball',x:mx,y:my});drawAll();return;
   }
-  if(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line'){
+  if(S.tool==='text'){
+    startTextEdit(px,py,mx,my,d);return;
+  }
+  if(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line'||S.tool==='dashedline'||S.tool==='rect'||S.tool==='dashedrect'){
     if(!S.lineStart){S.lineStart={x:mx,y:my};}
     else{
       push();
@@ -747,7 +1322,7 @@ function onMove(e) {
   e.preventDefault();
   var pos=evPos(e);
   S.mouse={x:pos.mx,y:pos.my};
-  var hints={player:'Klicka för att placera spelare',cone:'Klicka för kon',pass:'Klicka startpunkt sedan slutpunkt',move:'Klicka startpunkt sedan slutpunkt',dribble:'Klicka startpunkt sedan slutpunkt',line:'Klicka startpunkt sedan slutpunkt',ball:'Klicka för boll',select:'Dra för att flytta',erase:'Klicka för att radera'};
+  var hints={player:'Klicka för att placera spelare',cone:'Klicka för kon',pass:'Klicka startpunkt sedan slutpunkt',move:'Klicka startpunkt sedan slutpunkt',dribble:'Klicka startpunkt sedan slutpunkt',line:'Klicka startpunkt sedan slutpunkt',dashedline:'Klicka startpunkt sedan slutpunkt',ball:'Klicka för boll',select:'Dra för att flytta',erase:'Klicka för att radera',rect:'Klicka startpunkt sedan slutpunkt',dashedrect:'Klicka startpunkt sedan slutpunkt',text:'Klicka för att placera text — Enter = klar, Shift+Enter = ny rad, Esc = avbryt'};
   document.getElementById('hint-bar').textContent=S.lineStart?'Klicka för slutpunkt — Esc avbryter':(hints[S.tool]||'');
   if(S.dragging){
     var d2=getDims();
@@ -769,17 +1344,23 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){S.lineStart=null;drawAll();}
   if((e.ctrlKey||e.metaKey)&&e.key==='z') undoLast();
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
-  var map={p:'player',k:'cone',a:'pass',r:'move',d:'dribble',l:'line',b:'ball',s:'select',e:'erase'};
+  var map={p:'player',k:'cone',a:'pass',r:'move',d:'dribble',l:'line',x:'dashedline',b:'ball',s:'select',e:'erase',t:'text',q:'rect',w:'dashedrect'};
   if(map[e.key]) setTool(map[e.key]);
 });
 
 function findEl(px,py,d){
   for(var i=S.elements.length-1;i>=0;i--){
     var el=S.elements[i];
-    if(el.type==='pass'||el.type==='move'||el.type==='dribble'||el.type==='line'){
+    if(el.type==='pass'||el.type==='move'||el.type==='dribble'||el.type==='line'||el.type==='dashedline'||el.type==='rect'||el.type==='dashedrect'){
       if(el.x2==null) continue;
       var a=m2p(el.x,el.y,d),b=m2p(el.x2,el.y2,d);
       if(dist(px,py,(a.x+b.x)/2,(a.y+b.y)/2)<18) return el;
+    } else if(el.type==='text') {
+      var tp=m2p(el.x,el.y,d);
+      var tfs=Math.max(9,Math.min(Math.round(14*(d.pw/500)),52));
+      var tlines=String(el.text).split('\n');
+      var tw=150, th=tlines.length*tfs*1.3+6;
+      if(px>=tp.x-4&&px<=tp.x+tw&&py>=tp.y-4&&py<=tp.y+th) return el;
     } else {
       var p=m2p(el.x,el.y,d);
       if(dist(px,py,p.x,p.y)<20) return el;
@@ -867,32 +1448,40 @@ function renderSteps(){
 }
 
 // Render a frame to a full-size offscreen canvas and return it
-function renderFrameToCanvas(frame) {
+// Render a frame to an offscreen canvas at a given pixel width (for PDF compression)
+function renderFrameToCanvas(frame, targetW) {
+  var aspect = canvas.width / canvas.height;
+  var rw = targetW || canvas.width;
+  var rh = Math.round(rw / aspect);
+
   var oc = document.createElement('canvas');
-  oc.width = canvas.width; oc.height = canvas.height;
+  oc.width = rw; oc.height = rh;
   var octx = oc.getContext('2d');
 
-  // Save ALL relevant global state
+  // Snapshot ALL state — deep copy elements so nothing leaks between frames
   var savedEls    = S.elements;
   var savedPitch  = S.pitch;
   var savedFmt    = S.freeFormat;
   var savedLine   = S.lineStart;
   var savedMouse  = S.mouse;
+  var savedExp    = S._exporting;
+  var savedBw     = S._bw;  // preserve _bw — set by caller, don't let restore clobber it
   var realCanvas  = canvas;
   var realCtx     = ctx;
 
-  // Load frame state
-  S.elements   = frame.elements || [];
-  S.pitch      = frame.pitch    || savedPitch;
+  // Load this frame's state (deep copy so drawAll writeback can't corrupt it)
+  S.elements   = JSON.parse(JSON.stringify(frame.elements || []));
+  S.pitch      = frame.pitch      || savedPitch;
   S.freeFormat = frame.freeFormat || savedFmt;
   S.lineStart  = null;
   S.mouse      = null;
+  S._exporting = true;   // prevents drawAll from writing back into S.frames
   canvas = oc;
   ctx    = octx;
 
   drawAll();
 
-  // Restore everything
+  // Restore everything exactly
   canvas       = realCanvas;
   ctx          = realCtx;
   S.elements   = savedEls;
@@ -900,130 +1489,136 @@ function renderFrameToCanvas(frame) {
   S.freeFormat = savedFmt;
   S.lineStart  = savedLine;
   S.mouse      = savedMouse;
+  S._exporting = savedExp;
 
   return oc;
 }
 
-// Get the list of frames to export (multiframe mode or just current)
 function getExportFrames() {
   if (S.multiframe && S.frames.length > 0) {
-    // Make sure current frame is saved first
     saveCurrentFrame();
     return S.frames;
   }
-  return [{ elements: S.elements, pitch: S.pitch, comment: '' }];
+  return [{ elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch, freeFormat: S.freeFormat }];
 }
 
-function exportPNG(){
-  var frames = getExportFrames();
-  if (frames.length === 1) {
-    // Single frame — same as before but with steps text
-    var fc = document.createElement('canvas');
-    var stepLines = S.steps.map(function(s){ return s.num+'. '+s.title+(s.comment?' - '+s.comment:''); });
-    var lineH=18, pad=14, textH=stepLines.length ? stepLines.length*lineH+pad*2+10 : 0;
-    fc.width = canvas.width; fc.height = canvas.height + textH;
-    var fctx = fc.getContext('2d');
-    fctx.drawImage(canvas, 0, 0);
-    if (textH) {
-      fctx.fillStyle='#0f1a12'; fctx.fillRect(0,canvas.height,fc.width,textH);
-      fctx.strokeStyle='rgba(245,200,66,0.5)'; fctx.lineWidth=1;
-      fctx.beginPath(); fctx.moveTo(pad,canvas.height+8); fctx.lineTo(fc.width-pad,canvas.height+8); fctx.stroke();
-      fctx.fillStyle='rgba(255,255,255,0.82)'; fctx.font='13px Barlow,Arial,sans-serif';
-      stepLines.forEach(function(line,i){ fctx.fillText(line,pad,canvas.height+pad+10+(i*lineH)); });
+function exportPNG(bw){
+  S._bw = !!bw;
+  try {
+    var frames = getExportFrames();
+    if (frames.length === 1) {
+      var oc = renderFrameToCanvas(frames[0]);
+      var stepLines = S.steps.map(function(s){ return s.num+'. '+s.title+(s.comment?' — '+s.comment:''); });
+      if (!stepLines.length) {
+        var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=oc.toDataURL('image/png'); a.click();
+      } else {
+        var lineH=18, pad=14, textH=stepLines.length*lineH+pad*2+10;
+        var fc=document.createElement('canvas');
+        fc.width=oc.width; fc.height=oc.height+textH;
+        var fctx=fc.getContext('2d');
+        fctx.drawImage(oc,0,0);
+        fctx.fillStyle=bw?'#ffffff':'#0d1511'; fctx.fillRect(0,oc.height,fc.width,textH);
+        fctx.strokeStyle=bw?'rgba(0,0,0,0.3)':'rgba(126,232,162,0.4)'; fctx.lineWidth=1;
+        fctx.beginPath(); fctx.moveTo(pad,oc.height+8); fctx.lineTo(fc.width-pad,oc.height+8); fctx.stroke();
+        fctx.fillStyle=bw?'#111111':'rgba(255,255,255,0.8)'; fctx.font='13px Inter,Arial,sans-serif';
+        stepLines.forEach(function(line,i){ fctx.fillText(line,pad,oc.height+pad+10+(i*lineH)); });
+        var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=fc.toDataURL('image/png'); a.click();
+      }
+    } else {
+      frames.forEach(function(frame, idx){
+        var oc = renderFrameToCanvas(frame);
+        var a=document.createElement('a');
+        a.download='dewpicked-frame-'+(idx+1)+(bw?'-bw':'')+'.png';
+        a.href=oc.toDataURL('image/png');
+        a.click();
+      });
     }
-    var a=document.createElement('a'); a.download='traningsplan.png'; a.href=fc.toDataURL('image/png'); a.click();
-  } else {
-    // Multi-frame: stitch all frames vertically into one tall PNG
-    var cols = Math.min(frames.length, 3);
-    var rows = Math.ceil(frames.length / cols);
-    var fw = canvas.width, fh = canvas.height;
-    var gap = 12, labelH = 22;
-    var totalW = cols*(fw+gap)-gap;
-    var totalH = rows*(fh+labelH+gap)-gap;
-    var fc = document.createElement('canvas');
-    fc.width = totalW; fc.height = totalH;
-    var fctx = fc.getContext('2d');
-    fctx.fillStyle='#0a1209'; fctx.fillRect(0,0,totalW,totalH);
-    frames.forEach(function(frame, idx){
-      var col=idx%cols, row=Math.floor(idx/cols);
-      var ox=col*(fw+gap), oy=row*(fh+labelH+gap);
-      var oc = renderFrameToCanvas(frame);
-      fctx.drawImage(oc, ox, oy);
-      // Frame label
-      fctx.fillStyle='rgba(245,200,66,0.9)';
-      fctx.font='bold 13px Barlow Condensed,sans-serif';
-      fctx.textAlign='left';
-      fctx.fillText('Frame '+(idx+1)+(frame.comment?' — '+frame.comment:''), ox+6, oy+fh+15);
-    });
-    var a=document.createElement('a'); a.download='traningsplan-frames.png'; a.href=fc.toDataURL('image/png'); a.click();
+  } catch(err) {
+    alert('PNG-export misslyckades: '+err.message);
+    console.error(err);
   }
+  S._bw = false;
+  drawAll(); // redraw screen in normal colors
 }
 
-function exportPDF(){
-  if(!window.jspdf){alert('PDF-biblioteket laddas fortfarande. Vänta en sekund och försök igen.');return;}
+function exportPDF(bw){
+  S._bw = !!bw;
+  if(!window.jspdf){alert('PDF-biblioteket laddas. Vänta en sekund och försök igen.');return;}
   try{
     var jsPDF=window.jspdf.jsPDF;
     var frames=getExportFrames();
     var pdfW=297,pdfH=210;
     var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
 
+    // Render at reduced resolution for PDF — 900px wide is plenty for A4
+    var PDF_RENDER_W = 900;
+
     frames.forEach(function(frame, idx){
       if(idx>0) doc.addPage();
 
-      // Render this frame
-      var oc = renderFrameToCanvas(frame);
-      var imgData = oc.toDataURL('image/png');
+      // Render frame at reduced size
+      var oc = renderFrameToCanvas(frame, PDF_RENDER_W);
 
-      var asp=oc.width/oc.height;
-      var imgW=pdfW*0.62, imgH=imgW/asp;
-      if(imgH>pdfH-18){imgH=pdfH-18;imgW=imgH*asp;}
-      doc.addImage(imgData,'PNG',10,10,imgW,imgH);
+      // Use JPEG at 0.82 quality — much smaller than PNG, looks fine for print
+      var imgData = oc.toDataURL('image/jpeg', 0.82);
 
-      // Right column
-      var colX=10+imgW+8, colW=pdfW-colX-8, y=16;
-      doc.setFont('helvetica','bold'); doc.setFontSize(12);
-      doc.setTextColor(245,200,66);
-      var title = frames.length>1 ? 'Frame '+(idx+1)+' / '+frames.length : 'Träningsplan';
-      doc.text(title, colX, y); y+=7;
-      doc.setDrawColor(245,200,66); doc.setLineWidth(0.3);
+      var asp = oc.width / oc.height;
+      var imgW = pdfW * 0.63, imgH = imgW / asp;
+      if(imgH > pdfH-16){ imgH=pdfH-16; imgW=imgH*asp; }
+      doc.addImage(imgData,'JPEG',10,8,imgW,imgH);
+
+      // Right text column
+      var colX=10+imgW+7, colW=pdfW-colX-8, y=15;
+
+      // Header
+      doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      doc.setTextColor(126,232,162);
+      doc.text(frames.length>1?'Frame '+(idx+1)+' / '+frames.length:'Dewpicked Football Coaching', colX, y);
+      y+=6;
+      doc.setDrawColor(126,232,162); doc.setLineWidth(0.25);
       doc.line(colX,y,colX+colW,y); y+=5;
 
-      // Frame comment if any
+      // Frame comment
       if(frame.comment){
-        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(200,220,200);
-        var clines=doc.splitTextToSize(frame.comment,colW-4);
-        clines.forEach(function(l){if(y<pdfH-10){doc.text(l,colX,y);y+=4.5;}});
+        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(180,210,180);
+        doc.splitTextToSize(frame.comment,colW-4).forEach(function(l){
+          if(y<pdfH-10){doc.text(l,colX,y);y+=4.5;}
+        });
         y+=3;
       }
 
-      // Steps (only on first frame or if single frame)
-      if(idx===0 && S.steps.length){
+      // Steps on every page
+      if(S.steps.length){
         S.steps.forEach(function(s){
           if(y>pdfH-10) return;
-          doc.setFillColor(25,70,40); doc.rect(colX,y-3.5,colW,6,'F');
-          doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(255,255,255);
-          doc.text(s.num+'.  '+s.title,colX+2,y); y+=6;
-          if(s.comment&&y<pdfH-8){
-            doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(190,215,190);
-            var lines=doc.splitTextToSize(s.comment,colW-5);
-            lines.forEach(function(line){if(y<pdfH-8){doc.text(line,colX+4,y);y+=4.5;}});
+          doc.setFillColor(20,55,35); doc.rect(colX,y-3.5,colW,5.8,'F');
+          doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(240,245,240);
+          doc.text(s.num+'.  '+s.title, colX+2, y); y+=5.5;
+          if(s.comment && y<pdfH-8){
+            doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(160,200,160);
+            doc.splitTextToSize(s.comment,colW-5).forEach(function(line){
+              if(y<pdfH-8){doc.text(line,colX+4,y);y+=4;}
+            });
             y+=2;
           }
         });
-      } else if(idx===0){
-        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(140,140,140);
-        doc.text('Inga moment tillagda',colX,y);
+      } else {
+        doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(120,140,120);
+        doc.text('Inga moment tillagda', colX, y);
       }
 
       // Footer
-      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,120,100);
-      doc.text('Träningsplaneraren  ·  '+new Date().toLocaleDateString('sv-SE')+(frames.length>1?' ·  Sida '+(idx+1)+'/'+frames.length:''),10,pdfH-4);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,110,80);
+      var footer='Dewpicked Football Coaching  ·  '+new Date().toLocaleDateString('sv-SE');
+      if(frames.length>1) footer+='  ·  '+(idx+1)+'/'+frames.length;
+      doc.text(footer, 10, pdfH-4);
     });
 
-    doc.save('traningsplan.pdf');
+    doc.save('dewpicked-coaching'+(bw?'-bw':'')+'.pdf');
+    S._bw=false;
   } catch(err){
-    alert('PDF-export misslyckades: '+err.message+'\nAnvänd PNG istället.');
-    console.error(err);
+    alert('PDF-export misslyckades: '+err.message+'\nFörsök med PNG istället.');
+    S._bw=false; console.error(err);
   }
 }
 
