@@ -1519,9 +1519,9 @@ function exportPNG(bw){
         var fctx=fc.getContext('2d');
         fctx.drawImage(oc,0,0);
         fctx.fillStyle=bw?'#ffffff':'#0d1511'; fctx.fillRect(0,oc.height,fc.width,textH);
-        fctx.strokeStyle=bw?'rgba(0,0,0,0.3)':'rgba(126,232,162,0.4)'; fctx.lineWidth=1;
+        fctx.strokeStyle=bw?'rgba(0,0,0,0.35)':'rgba(126,232,162,0.4)'; fctx.lineWidth=1;
         fctx.beginPath(); fctx.moveTo(pad,oc.height+8); fctx.lineTo(fc.width-pad,oc.height+8); fctx.stroke();
-        fctx.fillStyle=bw?'#111111':'rgba(255,255,255,0.8)'; fctx.font='13px Inter,Arial,sans-serif';
+        fctx.fillStyle=bw?'#111111':'rgba(255,255,255,0.85)'; fctx.font='bold 15px Inter,Arial,sans-serif';
         stepLines.forEach(function(line,i){ fctx.fillText(line,pad,oc.height+pad+10+(i*lineH)); });
         var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=fc.toDataURL('image/png'); a.click();
       }
@@ -1571,45 +1571,62 @@ function exportPDF(bw){
       // Right text column
       var colX=10+imgW+7, colW=pdfW-colX-8, y=15;
 
+      // Colors adapt to BW mode
+      var c_accent  = bw ? [0,0,0]         : [126,232,162];
+      var c_title   = bw ? [0,0,0]         : [230,240,230];
+      var c_comment = bw ? [60,60,60]      : [180,210,180];
+      var c_stepbg  = bw ? [230,230,230]   : [20,55,35];
+      var c_steptxt = bw ? [0,0,0]         : [240,245,240];
+      var c_subbg   = bw ? null            : null;
+      var c_subtxt  = bw ? [50,50,50]      : [160,200,160];
+      var c_footer  = bw ? [80,80,80]      : [80,110,80];
+
       // Header
-      doc.setFont('helvetica','bold'); doc.setFontSize(11);
-      doc.setTextColor(126,232,162);
+      doc.setFont('helvetica','bold'); doc.setFontSize(13);
+      doc.setTextColor(c_accent[0],c_accent[1],c_accent[2]);
       doc.text(frames.length>1?'Frame '+(idx+1)+' / '+frames.length:'Dewpicked Football Coaching', colX, y);
-      y+=6;
-      doc.setDrawColor(126,232,162); doc.setLineWidth(0.25);
-      doc.line(colX,y,colX+colW,y); y+=5;
+      y+=7;
+      doc.setDrawColor(c_accent[0],c_accent[1],c_accent[2]); doc.setLineWidth(0.4);
+      doc.line(colX,y,colX+colW,y); y+=6;
 
       // Frame comment
       if(frame.comment){
-        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(180,210,180);
+        doc.setFont('helvetica','italic'); doc.setFontSize(10);
+        doc.setTextColor(c_comment[0],c_comment[1],c_comment[2]);
         doc.splitTextToSize(frame.comment,colW-4).forEach(function(l){
-          if(y<pdfH-10){doc.text(l,colX,y);y+=4.5;}
+          if(y<pdfH-10){doc.text(l,colX,y);y+=5.5;}
         });
         y+=3;
       }
 
-      // Steps on every page
+      // Steps
       if(S.steps.length){
         S.steps.forEach(function(s){
-          if(y>pdfH-10) return;
-          doc.setFillColor(20,55,35); doc.rect(colX,y-3.5,colW,5.8,'F');
-          doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(240,245,240);
-          doc.text(s.num+'.  '+s.title, colX+2, y); y+=5.5;
-          if(s.comment && y<pdfH-8){
-            doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(160,200,160);
-            doc.splitTextToSize(s.comment,colW-5).forEach(function(line){
-              if(y<pdfH-8){doc.text(line,colX+4,y);y+=4;}
+          if(y>pdfH-12) return;
+          // Step title row background
+          doc.setFillColor(c_stepbg[0],c_stepbg[1],c_stepbg[2]);
+          doc.rect(colX,y-4,colW,7,'F');
+          doc.setFont('helvetica','bold'); doc.setFontSize(10);
+          doc.setTextColor(c_steptxt[0],c_steptxt[1],c_steptxt[2]);
+          doc.text(s.num+'.  '+s.title, colX+2, y); y+=7;
+          if(s.comment && y<pdfH-10){
+            doc.setFont('helvetica','normal'); doc.setFontSize(9);
+            doc.setTextColor(c_subtxt[0],c_subtxt[1],c_subtxt[2]);
+            doc.splitTextToSize(s.comment,colW-6).forEach(function(line){
+              if(y<pdfH-10){doc.text(line,colX+4,y);y+=5;}
             });
             y+=2;
           }
         });
       } else {
-        doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(120,140,120);
+        doc.setFont('helvetica','italic'); doc.setFontSize(10);
+        doc.setTextColor(c_comment[0],c_comment[1],c_comment[2]);
         doc.text('Inga moment tillagda', colX, y);
       }
 
       // Footer
-      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,110,80);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      doc.setTextColor(c_footer[0],c_footer[1],c_footer[2]);
       var footer='Dewpicked Football Coaching  ·  '+new Date().toLocaleDateString('sv-SE');
       if(frames.length>1) footer+='  ·  '+(idx+1)+'/'+frames.length;
       doc.text(footer, 10, pdfH-4);
