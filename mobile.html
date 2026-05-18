@@ -1,0 +1,1515 @@
+  <!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dewpicked Football Coaching</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@700;900&display=swap');
+
+  :root {
+    --accent:      #7ee8a2;
+    --accent-dim:  rgba(126,232,162,0.14);
+    --text:        #e8eae6;
+    --text-muted:  rgba(232,234,230,0.4);
+    --text-dim:    rgba(232,234,230,0.65);
+    --bg:          #0d1511;
+    --surface:     #131d16;
+    --surface2:    #192320;
+    --surface3:    #1f2d24;
+    --border:      rgba(255,255,255,0.08);
+    --border-mid:  rgba(255,255,255,0.14);
+    --radius:      6px;
+    --radius-sm:   4px;
+    --tb-h:        54px;   /* bottom toolbar height */
+    --panel-h:     52vh;   /* slide-up panel height */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); }
+  body { font-family: 'Inter', system-ui, sans-serif; color: var(--text); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+
+  /* ── HEADER ── */
+  header {
+    height: 44px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 12px; gap: 10px;
+    flex-shrink: 0; position: relative;
+  }
+  header::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, var(--accent), transparent 60%);
+    opacity: 0.4;
+  }
+  .logo-mark { width:26px; height:26px; background:var(--accent); border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .logo-text .brand { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:14px; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent); display:block; }
+  .logo-text .sub   { font-size:8.5px; font-weight:500; letter-spacing:1.8px; text-transform:uppercase; color:var(--text-muted); }
+  .hdr-right { margin-left:auto; display:flex; gap:5px; align-items:center; }
+  .btn {
+    font-family:'Inter',sans-serif; font-weight:500; font-size:11px;
+    padding:5px 10px; border:none; border-radius:var(--radius-sm);
+    cursor:pointer; transition:all 0.12s; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:4px;
+  }
+  .btn-primary { background:var(--accent); color:#0a1a0f; font-weight:600; }
+  .btn-ghost   { background:transparent; border:1px solid var(--border-mid); color:var(--text-dim); }
+  .btn-ghost:hover, .btn-ghost:active { border-color:var(--accent); color:var(--accent); }
+
+  /* ── CANVAS AREA ── */
+  .canvas-wrap {
+    flex: 1; position: relative; overflow: hidden;
+    background: #0b1610; touch-action: none;
+  }
+  #pitch-canvas { display:block; touch-action:none; }
+  .hint-bar {
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
+    padding:3px 13px; border-radius:20px;
+    font-size:10px; font-weight:500; letter-spacing:0.2px;
+    color:var(--text-muted); pointer-events:none; white-space:nowrap;
+    border:1px solid var(--border);
+  }
+
+  /* ── BOTTOM TOOLBAR ── */
+  .toolbar {
+    height: var(--tb-h);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 6px; gap: 3px;
+    flex-shrink: 0; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+
+  .tb-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 5px 7px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-muted); font-size: 8px; font-family:'Inter',sans-serif;
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;
+    cursor: pointer; transition: all 0.12s; flex-shrink: 0; min-width: 44px;
+  }
+  .tb-btn svg { width: 20px; height: 20px; }
+  .tb-btn.active { border-color: rgba(126,232,162,0.5); background: var(--accent-dim); color: var(--accent); }
+  .tb-btn:active { opacity: 0.75; }
+
+  .tb-sep { width: 1px; height: 30px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+  /* ── SLIDE-UP PANEL ── */
+  .panel-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 50; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .panel-overlay.open { opacity: 1; pointer-events: all; }
+
+  .slide-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border-mid);
+    border-radius: 14px 14px 0 0;
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.32,0.72,0,1);
+    max-height: var(--panel-h);
+    display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .slide-panel.open { transform: translateY(0); }
+
+  .panel-handle {
+    width: 36px; height: 4px; background: rgba(255,255,255,0.15);
+    border-radius: 2px; margin: 10px auto 6px;
+  }
+  .panel-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--text-dim);
+    padding: 4px 16px 10px; border-bottom: 1px solid var(--border);
+  }
+  .panel-body {
+    flex: 1; overflow-y: auto; padding: 12px 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── PANEL CONTENTS ── */
+  .section-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 1.6px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 8px; margin-top: 14px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .option-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+
+  .opt-btn {
+    padding: 7px 13px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-dim); font-size: 11.5px; font-family:'Inter',sans-serif;
+    font-weight: 400; cursor: pointer; transition: all 0.12s;
+  }
+  .opt-btn.active { border-color: rgba(126,232,162,0.4); background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .color-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.12s; }
+  .color-swatch.active { border-color: white; transform: scale(1.18); }
+
+  .team-pick-row { display: flex; gap: 8px; }
+  .team-pick-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted);
+    font-family:'Inter',sans-serif; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; cursor: pointer; transition: all 0.12s;
+  }
+  .team-pick-btn.active { border-color: rgba(126,232,162,0.4); background: var(--accent-dim); color: var(--accent); }
+
+  .color-picker-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .color-picker-row label { font-size: 11px; color: var(--text-muted); flex: 1; }
+  .color-picker-row input[type=color] { width: 32px; height: 26px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; padding: 1px; cursor: pointer; }
+
+  .cone-color-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .cone-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.12s; }
+  .cone-swatch.active { border-color: white; transform: scale(1.18); }
+
+  .num-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .num-row label { font-size: 11px; color: var(--text-muted); flex: 1; }
+  .num-row input { width: 48px; background: var(--surface3); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 4px 8px; font-size: 13px; text-align: center; font-family:'Inter',sans-serif; }
+
+  /* Steps */
+  .step-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 6px; cursor: pointer; position: relative; }
+  .step-card.active { border-color: rgba(126,232,162,0.35); background: var(--accent-dim); }
+  .step-num { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; background:var(--accent); color:#0a1a0f; border-radius:50%; font-size:10px; font-weight:700; margin-right:6px; }
+  .step-title { font-size:12px; font-weight:500; }
+  .step-comment { font-size:10.5px; color:var(--text-muted); margin-top:3px; margin-left:24px; line-height:1.4; }
+  .step-del { position:absolute; top:7px; right:8px; background:none; border:none; color:var(--text-muted); font-size:13px; padding:0; cursor:pointer; }
+
+  textarea, input[type=text] {
+    background: var(--surface3); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--radius-sm);
+    padding: 8px 10px; font-size: 12px; font-family:'Inter',sans-serif;
+    width: 100%; resize: none;
+  }
+  textarea:focus, input[type=text]:focus { outline: none; border-color: var(--accent); }
+
+  /* Filmstrip */
+  .filmstrip-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 6px 8px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; overflow-x: auto; }
+  .filmstrip-bar.hidden { display: none; }
+  .frame-thumb { position:relative; flex-shrink:0; cursor:pointer; border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+  .frame-thumb.active { border-color:var(--accent); }
+  .frame-thumb canvas { display:block; }
+  .frame-thumb .frame-num { position:absolute; bottom:2px; left:3px; font-size:10px; font-weight:600; color:white; text-shadow:0 1px 3px #000; pointer-events:none; }
+  .frame-thumb .frame-del { position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); border:none; color:rgba(255,255,255,0.5); font-size:10px; padding:2px 4px; cursor:pointer; border-radius:2px; display:none; }
+  .frame-thumb:hover .frame-del { display:block; }
+  .frame-add-btn { flex-shrink:0; width:50px; height:38px; border:1px dashed var(--border-mid); border-radius:var(--radius-sm); background:transparent; color:var(--text-muted); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+  ::-webkit-scrollbar { display: none; }
+
+  /* Free format picker */
+  .free-format-picker.hidden { display: none; }
+  .free-fmt-row { display:flex; gap:6px; margin-top:6px; }
+  .free-fmt-btn { flex:1; display:flex; align-items:center; justify-content:center; padding:7px; border-radius:var(--radius-sm); border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; transition:all 0.12s; }
+  .free-fmt-btn.active { border-color:rgba(126,232,162,0.4); background:var(--accent-dim); color:var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-mark">⚽</div>
+  <div class="logo-text">
+    <span class="brand">Dewpicked</span>
+    <span class="sub">Football Coaching</span>
+  </div>
+  <div class="hdr-right">
+    <a href="index.html" class="btn btn-ghost" style="text-decoration:none;" title="Desktopversion">🖥 Desktop</a>
+    <button class="btn btn-ghost" onclick="undoLast()">↩</button>
+    <button class="btn btn-ghost" onclick="clearCanvas()">✕ Rensa</button>
+    <button class="btn btn-primary" onclick="showPanel('export')">↓ Export</button>
+  </div>
+</header>
+
+<!-- CANVAS -->
+<div class="canvas-wrap" id="canvas-area">
+  <canvas id="pitch-canvas"></canvas>
+  <div class="hint-bar" id="hint-bar">Välj verktyg nedan</div>
+</div>
+
+<!-- FILMSTRIP -->
+<div class="filmstrip-bar hidden" id="filmstrip-bar">
+  <button class="frame-add-btn" onclick="addFrame()" title="Ny frame">+</button>
+</div>
+
+<!-- BOTTOM TOOLBAR -->
+<div class="toolbar" id="toolbar">
+
+  <!-- Pitch selector button -->
+  <button class="tb-btn" id="tb-pitch" onclick="showPanel('pitch')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3"/></svg>
+    Plan
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Players -->
+  <button class="tb-btn" id="tool-player" onclick="setTool('player');showTeamQuickPick()">
+    <svg viewBox="0 0 24 24"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" id="tb-jersey-icon" fill="#5a28be"/></svg>
+    Spelare
+  </button>
+
+  <!-- Cone -->
+  <button class="tb-btn" id="tool-cone" onclick="setTool('cone')">
+    <svg viewBox="0 0 24 24"><polygon points="12,3 20,20 4,20" id="tb-cone-icon" fill="#ff6b1a"/></svg>
+    Kon
+  </button>
+
+  <!-- Ball -->
+  <button class="tb-btn" id="tool-ball" onclick="setTool('ball')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="white" stroke="#555" stroke-width="1.5"/><circle cx="12" cy="12" r="2" fill="#333"/></svg>
+    Boll
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Lines -->
+  <button class="tb-btn active" id="tool-pass" onclick="setTool('pass')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="19" y2="12"/><polyline points="14,7 19,12 14,17"/></svg>
+    Pass
+  </button>
+  <button class="tb-btn" id="tool-move" onclick="setTool('move')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="17" y2="12" stroke-dasharray="5,3"/><polyline points="13,7 18,12 13,17"/></svg>
+    Rörelse
+  </button>
+  <button class="tb-btn" id="tool-dribble" onclick="setTool('dribble')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3,12 Q5,8 7,12 Q9,16 11,12 Q13,8 15,12 Q17,16 19,12"/><polyline points="16,8 19,12 16,16"/></svg>
+    Dribbling
+  </button>
+  <button class="tb-btn" id="tool-line" onclick="setTool('line')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="18" x2="21" y2="6"/></svg>
+    Streck
+  </button>
+  <button class="tb-btn" id="tool-dashedline" onclick="setTool('dashedline')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,3"><line x1="3" y1="18" x2="21" y2="6"/></svg>
+    Streck--
+  </button>
+  <button class="tb-btn" id="tool-rect" onclick="setTool('rect')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+    Rektangel
+  </button>
+  <button class="tb-btn" id="tool-dashedrect" onclick="setTool('dashedrect')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,3"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+    Rekt--
+  </button>
+  <button class="tb-btn" id="tool-text" onclick="setTool('text')">
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="5" width="16" height="2" rx="1"/><rect x="4" y="10" width="12" height="2" rx="1"/><rect x="4" y="15" width="14" height="2" rx="1"/></svg>
+    Text
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Misc -->
+  <button class="tb-btn" id="tool-select" onclick="setTool('select')">
+    <svg viewBox="0 0 24 24"><path d="M5 3 L5 19 L9 15 L12 21 L14 20 L11 14 L16 14 Z" fill="currentColor"/></svg>
+    Flytta
+  </button>
+  <button class="tb-btn" id="tool-erase" onclick="setTool('erase')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17 L8 22 L21 9 L16 4 Z" fill="rgba(255,100,100,0.3)"/><line x1="3" y1="22" x2="21" y2="22"/></svg>
+    Radera
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Settings panels -->
+  <button class="tb-btn" onclick="showPanel('color')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="10" r="2" fill="#f5c842"/><circle cx="16" cy="10" r="2" fill="#3498db"/><circle cx="12" cy="16" r="2" fill="#e74c3c"/></svg>
+    Färg
+  </button>
+  <button class="tb-btn" onclick="showPanel('team')">
+    <svg viewBox="0 0 24 24"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#5a28be"/></svg>
+    Lag
+  </button>
+  <button class="tb-btn" onclick="showPanel('cone')">
+    <svg viewBox="0 0 24 24"><polygon points="12,3 20,20 4,20" fill="#ff6b1a"/></svg>
+    Kon
+  </button>
+  <button class="tb-btn" onclick="showPanel('steps')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="3" rx="1"/><rect x="3" y="10" width="14" height="3" rx="1"/><rect x="3" y="16" width="16" height="3" rx="1"/></svg>
+    Moment
+  </button>
+  <button class="tb-btn" onclick="showPanel('frames')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="14" height="11" rx="1"/><rect x="8" y="9" width="14" height="11" rx="1"/></svg>
+    Frames
+  </button>
+</div>
+
+<!-- PANEL OVERLAY -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+
+<!-- PITCH PANEL -->
+<div class="slide-panel" id="panel-pitch">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Plantyp</div>
+  <div class="panel-body">
+    <div class="option-row">
+      <button class="opt-btn active" onclick="setPitch('full')" data-pitch="full">Hel plan</button>
+      <button class="opt-btn" onclick="setPitch('half')" data-pitch="half">Halvplan</button>
+      <button class="opt-btn" onclick="setPitch('third')" data-pitch="third">En tredjedel</button>
+      <button class="opt-btn" onclick="setPitch('free')" data-pitch="free">Fri yta</button>
+    </div>
+    <div class="free-format-picker hidden" id="free-format-picker">
+      <div class="section-label">Format</div>
+      <div class="free-fmt-row">
+        <button class="free-fmt-btn active" data-fmt="square" onclick="setFreeFormat('square')">
+          <svg viewBox="0 0 20 20" width="28" height="28"><rect x="2" y="2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <button class="free-fmt-btn" data-fmt="portrait" onclick="setFreeFormat('portrait')">
+          <svg viewBox="0 0 20 28" width="22" height="28"><rect x="2" y="2" width="16" height="24" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <button class="free-fmt-btn" data-fmt="landscape" onclick="setFreeFormat('landscape')">
+          <svg viewBox="0 0 28 20" width="28" height="22"><rect x="2" y="2" width="24" height="16" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COLOR PANEL -->
+<div class="slide-panel" id="panel-color">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Linjefärg</div>
+  <div class="panel-body">
+    <div class="color-row">
+      <div class="color-swatch" style="background:#111111;border:1px solid rgba(255,255,255,0.2)" onclick="setLineColor('#111111')" data-color="#111111"></div>
+      <div class="color-swatch active" style="background:#ffffff" onclick="setLineColor('#ffffff')" data-color="#ffffff"></div>
+      <div class="color-swatch" style="background:#f5c842" onclick="setLineColor('#f5c842')" data-color="#f5c842"></div>
+      <div class="color-swatch" style="background:#e8540a" onclick="setLineColor('#e8540a')" data-color="#e8540a"></div>
+      <div class="color-swatch" style="background:#3498db" onclick="setLineColor('#3498db')" data-color="#3498db"></div>
+      <div class="color-swatch" style="background:#2ecc71" onclick="setLineColor('#2ecc71')" data-color="#2ecc71"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TEAM PANEL -->
+<div class="slide-panel" id="panel-team">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Lag</div>
+  <div class="panel-body">
+    <div class="section-label">Aktivt lag</div>
+    <div class="team-pick-row">
+      <button class="team-pick-btn active" id="pick-A" onclick="setActiveTeam('A')">
+        <svg id="jersey-icon-A" viewBox="0 0 24 24" width="22" height="22"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#5a28be"/></svg>
+        Team A
+      </button>
+      <button class="team-pick-btn" id="pick-B" onclick="setActiveTeam('B')">
+        <svg id="jersey-icon-B" viewBox="0 0 24 24" width="22" height="22"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#e8e8e8"/></svg>
+        Team B
+      </button>
+    </div>
+    <div class="color-picker-row">
+      <label>Färg A:</label>
+      <input type="color" id="colorA" value="#5a28be" oninput="setTeamColor('A',this.value)">
+      <label>Färg B:</label>
+      <input type="color" id="colorB" value="#e8e8e8" oninput="setTeamColor('B',this.value)">
+    </div>
+    <div class="section-label">Max spelare</div>
+    <div class="num-row"><label>Team A:</label><input type="number" id="teamA-count" value="11" min="1" max="11"></div>
+    <div class="num-row"><label>Team B:</label><input type="number" id="teamB-count" value="11" min="0" max="11"></div>
+  </div>
+</div>
+
+<!-- CONE PANEL -->
+<div class="slide-panel" id="panel-cone">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Kon</div>
+  <div class="panel-body">
+    <div class="section-label">Typ</div>
+    <div class="option-row">
+      <button class="cone-shape-btn active" id="coneshape-tall" onclick="setConeShape('tall')" style="padding:8px 16px;border-radius:4px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text-dim);">▲ Hög</button>
+      <button class="cone-shape-btn" id="coneshape-flat" onclick="setConeShape('flat')" style="padding:8px 16px;border-radius:4px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text-dim);">⬭ Flat</button>
+    </div>
+    <div class="section-label">Färg</div>
+    <div class="cone-color-row">
+      <div class="cone-swatch active" style="background:#ff6b1a" onclick="setConeColor('#ff6b1a')" data-conecolor="#ff6b1a"></div>
+      <div class="cone-swatch" style="background:#f5c842" onclick="setConeColor('#f5c842')" data-conecolor="#f5c842"></div>
+      <div class="cone-swatch" style="background:#e74c3c" onclick="setConeColor('#e74c3c')" data-conecolor="#e74c3c"></div>
+      <div class="cone-swatch" style="background:#3498db" onclick="setConeColor('#3498db')" data-conecolor="#3498db"></div>
+      <div class="cone-swatch" style="background:#2ecc71" onclick="setConeColor('#2ecc71')" data-conecolor="#2ecc71"></div>
+      <div class="cone-swatch" style="background:#ffffff;border:1px solid rgba(255,255,255,0.2)" onclick="setConeColor('#ffffff')" data-conecolor="#ffffff"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEPS PANEL -->
+<div class="slide-panel" id="panel-steps">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Moment</div>
+  <div class="panel-body">
+    <div id="steps-list"><div style="color:var(--text-muted);font-size:11px;text-align:center;padding:16px 0;">Rita övningen och lägg till moment</div></div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+      <input type="text" id="step-title" placeholder="Momentets namn...">
+      <textarea id="step-comment" rows="2" placeholder="Instruktion / kommentar..."></textarea>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addStep()">+ Lägg till moment</button>
+    </div>
+  </div>
+</div>
+
+<!-- FRAMES PANEL -->
+<div class="slide-panel" id="panel-frames">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Frames</div>
+  <div class="panel-body">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:var(--text-dim);">
+      <input type="checkbox" id="multiframe-toggle" onchange="toggleMultiframe(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);">
+      Flera planbilder
+    </label>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">Varje frame är en egen planritning</div>
+  </div>
+</div>
+
+<!-- EXPORT PANEL -->
+<div class="slide-panel" id="panel-export">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Exportera</div>
+  <div class="panel-body">
+    <div class="section-label">Färg</div>
+    <div class="option-row">
+      <button class="btn btn-ghost" onclick="exportPNG(false);closePanel()">↓ PNG</button>
+      <button class="btn btn-primary" onclick="exportPDF(false);closePanel()">↓ PDF</button>
+    </div>
+    <div class="section-label">Svartvitt (utskrift)</div>
+    <div class="option-row">
+      <button class="btn btn-ghost" onclick="exportPNG(true);closePanel()">↓ PNG B&W</button>
+      <button class="btn btn-ghost" onclick="exportPDF(true);closePanel()">↓ PDF B&W</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PANEL SYSTEM ──────────────────────────────────────────
+var _openPanel = null;
+function showPanel(id) {
+  closePanel();
+  var p = document.getElementById('panel-' + id);
+  var o = document.getElementById('panel-overlay');
+  if (!p) return;
+  p.classList.add('open');
+  o.classList.add('open');
+  _openPanel = id;
+}
+function closePanel() {
+  if (_openPanel) {
+    var p = document.getElementById('panel-' + _openPanel);
+    if (p) p.classList.remove('open');
+    document.getElementById('panel-overlay').classList.remove('open');
+    _openPanel = null;
+  }
+}
+// Close on canvas tap when panel open
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePanel(); });
+
+// Override setTool to update toolbar buttons
+var _origSetTool;
+
+// Show team quick pick on player tool tap
+function showTeamQuickPick() {
+  showPanel('team');
+}
+
+
+var canvas = document.getElementById('pitch-canvas');
+var ctx = canvas.getContext('2d');
+var S = {
+  pitch:'full', tool:'player', lineColor:'#111111',
+  elements:[], steps:[], lineStart:null,
+  dragging:null, dragOffX:0, dragOffY:0,
+  history:[], activeStep:null, mouse:null, activeTeam:'A', freeFormat:'square', teamColors:{A:'#5a28be',B:'#e8e8e8'}, coneShape:'tall', coneColor:'#ff6b1a', _exporting:false, _bw:false,
+  multiframe:false,
+  frames:[], currentFrame:0
+};
+
+
+// =====================
+// MULTI-FRAME
+// =====================
+function toggleMultiframe(on) {
+  S.multiframe = on;
+  var bar = document.getElementById('filmstrip-bar');
+  if (on) {
+    bar.classList.remove('hidden');
+    // Init with current canvas as frame 0 if empty
+    if (!S.frames.length) {
+      S.frames = [{ elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch }];
+      S.currentFrame = 0;
+    }
+    renderFilmstrip();
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+function saveCurrentFrame() {
+  if (!S.multiframe || !S.frames.length) return;
+  S.frames[S.currentFrame] = { elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch, freeFormat: S.freeFormat };
+}
+
+function loadFrame(idx) {
+  if (!S.frames[idx]) return;
+  saveCurrentFrame();
+  S.currentFrame = idx;
+  var f = S.frames[idx];
+  S.elements = JSON.parse(JSON.stringify(f.elements));
+  if (f.pitch) {
+    S.pitch = f.pitch;
+    document.querySelectorAll('.pitch-option').forEach(function(b){b.classList.remove('active');});
+    var pb=document.querySelector('[data-pitch="'+f.pitch+'"]'); if(pb) pb.classList.add('active');
+    var picker=document.getElementById('free-format-picker');
+    if(f.pitch==='free') picker.classList.remove('hidden'); else picker.classList.add('hidden');
+  }
+  if (f.freeFormat) {
+    S.freeFormat = f.freeFormat;
+    document.querySelectorAll('.free-fmt-btn').forEach(function(b){b.classList.remove('active');});
+    var fb=document.querySelector('[data-fmt="'+f.freeFormat+'"]'); if(fb) fb.classList.add('active');
+  }
+  drawAll();
+  renderFilmstrip();
+}
+
+function addFrame() {
+  saveCurrentFrame();
+  // New frame copies current layout but clears elements
+  S.frames.push({ elements: [], pitch: S.pitch, freeFormat: S.freeFormat });
+  S.currentFrame = S.frames.length - 1;
+  S.elements = [];
+  drawAll();
+  renderFilmstrip();
+}
+
+function deleteFrame(idx) {
+  if (S.frames.length <= 1) { alert('Minst en frame krävs.'); return; }
+  S.frames.splice(idx, 1);
+  if (S.currentFrame >= S.frames.length) S.currentFrame = S.frames.length - 1;
+  loadFrame(S.currentFrame);
+}
+
+function renderFilmstrip() {
+  var bar = document.getElementById('filmstrip-bar');
+  // Remove old thumbs
+  var old = bar.querySelectorAll('.frame-thumb');
+  old.forEach(function(el){ el.remove(); });
+  var addBtn = bar.querySelector('.frame-add-btn');
+
+  S.frames.forEach(function(frame, idx) {
+    var wrap = document.createElement('div');
+    wrap.className = 'frame-thumb' + (idx === S.currentFrame ? ' active' : '');
+    wrap.onclick = function(){ loadFrame(idx); };
+
+    var tc = document.createElement('canvas');
+    tc.width = 56; tc.height = 40;
+    renderMiniature(tc, frame);
+    wrap.appendChild(tc);
+
+    var num = document.createElement('div');
+    num.className = 'frame-num';
+    num.textContent = idx + 1;
+    wrap.appendChild(num);
+
+    var del = document.createElement('button');
+    del.className = 'frame-del';
+    del.textContent = '✕';
+    del.onclick = function(e){ e.stopPropagation(); deleteFrame(idx); };
+    wrap.appendChild(del);
+
+    bar.insertBefore(wrap, addBtn);
+  });
+}
+
+function renderMiniature(tc, frame) {
+  var tctx = tc.getContext('2d');
+  var W=tc.width, H=tc.height, PAD=3;
+  var fmts={square:{realW:80,realH:80},portrait:{realW:68,realH:105},landscape:{realW:105,realH:68}}; var cfgs={full:{realW:68,realH:105},half:{realW:68,realH:52.5},third:{realW:68,realH:35},box:{realW:40.32,realH:16.5},free:fmts[S.freeFormat]||fmts.square};
+  var cfg=cfgs[frame.pitch||'full'];
+  var aspect=cfg.realW/cfg.realH;
+  var pw=W-PAD*2,ph=H-PAD*2;
+  if(pw/ph>aspect) pw=ph*aspect; else ph=pw/aspect;
+  var ox=(W-pw)/2, oy=(H-ph)/2;
+  // Draw green bg
+  tctx.fillStyle='#1a5c28'; tctx.fillRect(ox,oy,pw,ph);
+  // Border
+  tctx.strokeStyle='rgba(255,255,255,0.7)'; tctx.lineWidth=0.5; tctx.strokeRect(ox,oy,pw,ph);
+  // Draw elements as dots/lines
+  frame.elements.forEach(function(el){
+    var ex=ox+(el.x/cfg.realW)*pw, ey=oy+(el.y/cfg.realH)*ph;
+    if(el.type==='player'){
+      tctx.fillStyle=el.team==='A'?S.teamColors.A:S.teamColors.B;
+      tctx.beginPath();tctx.arc(ex,ey,2.5,0,Math.PI*2);tctx.fill();
+    } else if(el.type==='cone'){
+      tctx.fillStyle='#ff6b1a'; // always orange
+      tctx.beginPath();tctx.arc(ex,ey,1.5,0,Math.PI*2);tctx.fill();
+    } else if(el.type==='ball'){
+      tctx.fillStyle='white';
+      tctx.beginPath();tctx.arc(ex,ey,1.5,0,Math.PI*2);tctx.fill();
+    } else if(el.x2!=null){
+      var ex2=ox+(el.x2/cfg.realW)*pw, ey2=oy+(el.y2/cfg.realH)*ph;
+      tctx.strokeStyle=el.color||'#fff'; tctx.lineWidth=0.8;
+      if(el.type==='move') tctx.setLineDash([2,1]); else tctx.setLineDash([]);
+      tctx.beginPath();tctx.moveTo(ex,ey);tctx.lineTo(ex2,ey2);tctx.stroke();
+      tctx.setLineDash([]);
+    }
+  });
+}
+
+function setActiveTeam(t) {
+  S.activeTeam = t;
+  document.getElementById('pick-A').classList.toggle('active', t==='A');
+  document.getElementById('pick-B').classList.toggle('active', t==='B');
+  // Auto-switch to player tool
+  if (S.tool !== 'player') setTool('player');
+}
+
+function setTeamColor(team, color) {
+  S.teamColors[team] = color;
+  // Update jersey icon in button
+  var icon = document.getElementById('jersey-icon-'+team);
+  if (icon) icon.querySelector('path').setAttribute('fill', color);
+  drawAll();
+}
+
+function setConeShape(shape) {
+  S.coneShape = shape;
+  document.querySelectorAll('.cone-shape-btn').forEach(function(b){b.classList.remove('active');});
+  var btn = document.getElementById('coneshape-'+shape);
+  if(btn) btn.classList.add('active');
+  // Update cone tool button icon
+  updateConeIcon();
+}
+
+function setConeColor(color) {
+  S.coneColor = color;
+  document.querySelectorAll('.cone-color-swatch').forEach(function(s){s.classList.remove('active');});
+  var sw = document.querySelector('[data-conecolor="'+color+'"]');
+  if(sw) sw.classList.add('active');
+  updateConeIcon();
+}
+
+function updateConeIcon() {
+  // Update the SVG fill in the cone tool button to reflect current color+shape
+  var icon = document.getElementById('cone-btn-icon');
+  if(!icon) return;
+  if(S.coneShape==='flat'){
+    icon.setAttribute('viewBox','0 0 24 24');
+    icon.innerHTML = '<ellipse cx="12" cy="14" rx="9" ry="5" fill="'+S.coneColor+'"/><ellipse cx="12" cy="14" rx="9" ry="5" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>';
+  } else {
+    icon.setAttribute('viewBox','0 0 24 24');
+    icon.innerHTML = '<polygon points="12,3 20,20 4,20" fill="'+S.coneColor+'"/><rect x="3" y="19" width="18" height="2" rx="1" fill="rgba(0,0,0,0.3)"/>';
+  }
+}
+
+
+function startTextEdit(px, py, mx, my, d) {
+  // Remove any existing editor
+  var old = document.getElementById('dfc-text-editor');
+  if (old) old.parentNode.removeChild(old);
+
+  var area = document.getElementById('canvas-area');
+  var ar   = area.getBoundingClientRect();
+
+  // Build editor
+  var wrap = document.createElement('div');
+  wrap.id  = 'dfc-text-editor';
+  wrap.style.cssText = [
+    'position:fixed',
+    'left:'  + (ar.left + px) + 'px',
+    'top:'   + (ar.top  + py - 4) + 'px',
+    'z-index:300',
+    'display:flex',
+    'flex-direction:column',
+    'gap:4px'
+  ].join(';');
+
+  var ta = document.createElement('textarea');
+  ta.rows = 3;
+  ta.placeholder = 'Skriv text…';
+  ta.style.cssText = [
+    'background:rgba(10,20,13,0.95)',
+    'border:1.5px solid rgba(126,232,162,0.7)',
+    'color:#e8eae6',
+    'font-family:Inter,Arial,sans-serif',
+    'font-size:13px',
+    'font-weight:600',
+    'line-height:1.4',
+    'padding:6px 10px',
+    'border-radius:4px',
+    'outline:none',
+    'resize:none',
+    'width:190px',
+    'min-height:58px',
+    'box-shadow:0 6px 24px rgba(0,0,0,0.6)',
+    'backdrop-filter:blur(8px)'
+  ].join(';');
+
+  var hint = document.createElement('div');
+  hint.textContent = 'Enter = klar  ·  Shift+Enter = ny rad  ·  Esc = avbryt';
+  hint.style.cssText = 'font-size:9px;color:rgba(126,232,162,0.5);padding-left:2px;font-family:Inter,Arial,sans-serif;';
+
+  wrap.appendChild(ta);
+  wrap.appendChild(hint);
+  document.body.appendChild(wrap);
+
+  // Store position on the wrapper (not on ta, avoids property issues)
+  wrap._mx = mx; wrap._my = my;
+  wrap._col = (S.lineColor === '#111111' || S.lineColor === '#000000') ? '#ffffff' : S.lineColor;
+
+  var done = false;
+
+  function commit() {
+    if (done) return;
+    done = true;
+    var txt = ta.value.trim();
+    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    if (txt) {
+      push();
+      S.elements.push({ type:'text', x:wrap._mx, y:wrap._my, text:txt, color:wrap._col, size:14 });
+      drawAll();
+    }
+  }
+
+  function cancel() {
+    if (done) return;
+    done = true;
+    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+  }
+
+  ta.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commit(); }
+    if (e.key === 'Escape')               { e.preventDefault(); cancel(); }
+  });
+
+  ta.addEventListener('blur', function() {
+    // Small delay so click-outside doesn't race with keydown
+    setTimeout(commit, 120);
+  });
+
+  setTimeout(function() { ta.focus(); }, 20);
+}
+
+function resize() {
+  var area = document.getElementById('canvas-area');
+  var r = area.getBoundingClientRect();
+  canvas.width = Math.floor(r.width - 24);
+  canvas.height = Math.floor(r.height - 24);
+  drawAll();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('load', function(){ setTimeout(resize, 100); });
+
+function getDims() {
+  var W = canvas.width, H = canvas.height, PAD = 28;
+  var cfgs = {
+    full:  {realW:68, realH:105},
+    half:  {realW:68, realH:52.5},
+    third: {realW:68, realH:35},
+    box:   {realW:40.32, realH:16.5},
+    free:  (function(){ var fmts={square:{realW:80,realH:80},portrait:{realW:68,realH:105},landscape:{realW:105,realH:68}}; return fmts[S.freeFormat]||fmts.square; })()
+  };
+  var cfg = cfgs[S.pitch] || cfgs.full;
+  var aspect = cfg.realW / cfg.realH;
+  var pw = W - PAD*2, ph = H - PAD*2;
+  if (pw/ph > aspect) pw = ph*aspect; else ph = pw/aspect;
+  return { ox:(W-pw)/2, oy:(H-ph)/2, pw:pw, ph:ph, realW:cfg.realW, realH:cfg.realH };
+}
+
+function m2p(mx,my,d){ return {x: d.ox+(mx/d.realW)*d.pw, y: d.oy+(my/d.realH)*d.ph}; }
+function p2m(px,py,d){ return {x:((px-d.ox)/d.pw)*d.realW, y:((py-d.oy)/d.ph)*d.realH}; }
+function inPitch(mx,my,d){ return mx>=0&&my>=0&&mx<=d.realW&&my<=d.realH; }
+
+function drawPitch(d) {
+  var ox=d.ox, oy=d.oy, pw=d.pw, ph=d.ph, RW=d.realW, RH=d.realH;
+  // Background
+  ctx.fillStyle=S._bw?'#ffffff':'#1a5c28';
+  ctx.fillRect(ox,oy,pw,ph);
+  // Stripes (skip in BW)
+  if(!S._bw){
+    var ns=10, sh=ph/ns;
+    for(var i=0;i<ns;i++){
+      ctx.fillStyle=i%2===0?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.03)';
+      ctx.fillRect(ox,oy+i*sh,pw,sh);
+    }
+  }
+  // Lines
+  ctx.strokeStyle=S._bw?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.88)';
+  ctx.lineWidth=Math.max(1,pw/220);
+  ctx.lineCap='round'; ctx.setLineDash([]);
+
+  function ln(x1,y1,x2,y2){
+    var a=m2p(x1,y1,d),b=m2p(x2,y2,d);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  function rc(x,y,w,h){
+    var a=m2p(x,y,d);
+    ctx.strokeRect(a.x,a.y,(w/RW)*pw,(h/RH)*ph);
+  }
+  function cir(cx,cy,rm,sa,ea){
+    var c=m2p(cx,cy,d), r=(rm/RW)*pw;
+    ctx.beginPath();ctx.arc(c.x,c.y,r,sa!=null?sa:0,ea!=null?ea:Math.PI*2);ctx.stroke();
+  }
+  function dot(cx,cy){
+    var c=m2p(cx,cy,d);
+    ctx.fillStyle=S._bw?'#000':'white';ctx.beginPath();ctx.arc(c.x,c.y,3,0,Math.PI*2);ctx.fill();
+  }
+
+  if(S.pitch!=='free') ctx.strokeRect(ox,oy,pw,ph);
+
+  // Helper: clip drawing to pitch rectangle
+  function withClip(fn){
+    ctx.save();
+    ctx.beginPath();ctx.rect(ox,oy,pw,ph);ctx.clip();
+    fn();
+    ctx.restore();
+  }
+
+  if(S.pitch==='full'){
+    ln(0,RH/2,RW,RH/2);
+    cir(RW/2,RH/2,9.15); dot(RW/2,RH/2);
+    var palx=(RW-40.32)/2;
+    // Top penalty area + arc
+    // Arc centred on penalty spot (y=11), visible part bulges AWAY from goal (downward).
+    // Angles 0.6449 to 2.4967 rad cover the arc outside the box.
+    rc(palx,0,40.32,16.5); rc((RW-18.32)/2,0,18.32,5.5); dot(RW/2,11);
+    withClip(function(){
+      var ts=m2p(RW/2,11,d); ctx.beginPath();ctx.arc(ts.x,ts.y,(9.15/RW)*pw,0.6449,2.4967);ctx.stroke();
+    });
+    // Bottom penalty area + arc
+    // Arc centred on penalty spot (y=RH-11), visible part bulges AWAY from goal (upward).
+    // Angles -2.4967 to -0.6449 rad (negative = upward in canvas).
+    rc(palx,RH-16.5,40.32,16.5); rc((RW-18.32)/2,RH-5.5,18.32,5.5); dot(RW/2,RH-11);
+    withClip(function(){
+      var bs=m2p(RW/2,RH-11,d); ctx.beginPath();ctx.arc(bs.x,bs.y,(9.15/RW)*pw,-2.4967,-0.6449);ctx.stroke();
+    });
+    var glx=(RW-7.32)/2;
+    rc(glx,-2.44,7.32,2.44); rc(glx,RH,7.32,2.44);
+    // Corner arcs — clipped to pitch
+    withClip(function(){
+      [[0,0,0,Math.PI/2],[RW,0,Math.PI/2,Math.PI],[0,RH,-Math.PI/2,0],[RW,RH,Math.PI,Math.PI*1.5]].forEach(function(c){
+        var cp=m2p(c[0],c[1],d),cr=(1/RW)*pw;
+        ctx.beginPath();ctx.arc(cp.x,cp.y,cr,c[2],c[3]);ctx.stroke();
+      });
+    });
+  } else if(S.pitch==='half'){
+    var palx=(RW-40.32)/2;
+    rc(palx,RH-16.5,40.32,16.5); rc((RW-18.32)/2,RH-5.5,18.32,5.5); dot(RW/2,RH-11);
+    // Bottom penalty arc bulges upward (away from goal)
+    withClip(function(){
+      var sp=m2p(RW/2,RH-11,d); ctx.beginPath();ctx.arc(sp.x,sp.y,(9.15/RW)*pw,-2.4967,-0.6449);ctx.stroke();
+    });
+    // Centre circle: only draw the half that's visible (lower half = angles 0 to PI)
+    withClip(function(){
+      var cc=m2p(RW/2,0,d),cr=(9.15/RW)*pw;
+      ctx.beginPath();ctx.arc(cc.x,cc.y,cr,0,Math.PI);ctx.stroke();
+    });
+    dot(RW/2,0);
+    rc((RW-7.32)/2,RH,7.32,2.44);
+  } else if(S.pitch==='third'){
+    var palx=(RW-40.32)/2;
+    rc(palx,RH-16.5,40.32,16.5); rc((RW-18.32)/2,RH-5.5,18.32,5.5); dot(RW/2,RH-11);
+    rc((RW-7.32)/2,RH,7.32,2.44);
+  } else if(S.pitch==='box'){
+    dot(RW/2,11); rc((RW-18.32)/2,0,18.32,5.5);
+  }
+  // free: plain green, no lines drawn
+}
+
+function drawJersey(px,py,num,color) {
+  var w=22, h=32; // wider and taller — more elongated
+  ctx.save(); ctx.translate(px,py);
+  // In BW mode: team A = dark grey, team B = white with black border
+  if(S._bw){
+    var isBright = (function(c){ var r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); return (r*299+g*587+b*114)/1000 > 140; })(color);
+    color = isBright ? '#f0f0f0' : '#2a2a2a';
+  }
+  ctx.fillStyle=color; ctx.strokeStyle=S._bw?'rgba(0,0,0,0.7)':'rgba(255,255,255,0.65)'; ctx.lineWidth=1.1;
+  // Body — tall trapezoid
+  ctx.beginPath();
+  ctx.moveTo(-w*0.52, -h*0.06);
+  ctx.lineTo(-w*0.44,  h*0.82);
+  ctx.lineTo( w*0.44,  h*0.82);
+  ctx.lineTo( w*0.52, -h*0.06);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Left sleeve — short and stubby
+  ctx.beginPath();
+  ctx.moveTo(-w*0.52, -h*0.06);
+  ctx.lineTo(-w*0.92,  h*0.22);
+  ctx.lineTo(-w*0.72,  h*0.34);
+  ctx.lineTo(-w*0.44,  h*0.16);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Right sleeve
+  ctx.beginPath();
+  ctx.moveTo( w*0.52, -h*0.06);
+  ctx.lineTo( w*0.92,  h*0.22);
+  ctx.lineTo( w*0.72,  h*0.34);
+  ctx.lineTo( w*0.44,  h*0.16);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Collar
+  ctx.fillStyle='rgba(255,255,255,0.22)';
+  ctx.beginPath();ctx.ellipse(0,-h*0.08,w*0.18,h*0.08,0,0,Math.PI*2);ctx.fill();
+  // Number
+  // Pick number color based on jersey brightness
+  var r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
+  var brightness=(r*299+g*587+b*114)/1000;
+  ctx.fillStyle=brightness>140?'rgba(20,20,20,0.9)':'rgba(255,255,255,0.95)';
+  ctx.font='bold '+Math.round(h*0.38)+'px Barlow Condensed, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(String(num),0,h*0.32);
+  ctx.restore();
+}
+
+function drawCone(px,py,color,shape) {
+  if(shape==='flat') { drawFlatCone(px,py,color); return; }
+  var s=9; ctx.save(); ctx.translate(px,py);
+  ctx.fillStyle=color||'#ff6b1a'; ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(0,-s);ctx.lineTo(s,s);ctx.lineTo(-s,s);ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.beginPath();ctx.moveTo(-1,-s*0.1);ctx.lineTo(s*0.55,s);ctx.lineTo(s*0.25,s);ctx.lineTo(-s*0.28,-s*0.1);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function drawFlatCone(px,py,color) {
+  var rx=10, ry=5;
+  ctx.save(); ctx.translate(px,py);
+  // Outer disc
+  ctx.fillStyle=color||'#ff6b1a';
+  ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Inner highlight ring
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.ellipse(0,0,rx*0.55,ry*0.55,0,0,Math.PI*2); ctx.stroke();
+  // Centre dot
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.beginPath(); ctx.ellipse(0,0,2,1,0,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawBall(px,py) {
+  var r=7; ctx.save(); ctx.translate(px,py);
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath();ctx.ellipse(0,r+1,r*0.75,3,0,0,Math.PI*2);ctx.fill();
+  var g=ctx.createRadialGradient(-2,-2,1,0,0,r);
+  g.addColorStop(0,'#fff');g.addColorStop(1,'#ccc');
+  ctx.fillStyle=g; ctx.strokeStyle='#555'; ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#333';
+  ctx.beginPath();ctx.arc(0,0,2.5,0,Math.PI*2);ctx.fill();
+  for(var i=0;i<5;i++){
+    var a=(i/5)*Math.PI*2-Math.PI/2;
+    ctx.beginPath();ctx.arc(Math.cos(a)*r*0.54,Math.sin(a)*r*0.54,1.4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawArrow(el,d,alpha) {
+  if(el.x2==null) return;
+  var a=m2p(el.x,el.y,d), b=m2p(el.x2,el.y2,d);
+  ctx.save(); ctx.globalAlpha=alpha!=null?alpha:1;
+  ctx.strokeStyle=el.color||'#fff'; ctx.lineWidth=2.2;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  if(el.type==='pass'){
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  } else if(el.type==='move'){
+    ctx.setLineDash([7,4]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    ctx.setLineDash([]);
+  } else if(el.type==='dribble'){
+    ctx.setLineDash([]);
+    var dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+    if(len>1){
+      var nx=-dy/len,ny=dx/len,amp=5,freq=len/18;
+      // Reserve last 14px as a straight run-in so the arrow points cleanly forward
+      var straightPx=14;
+      var tStop=Math.max(0, (len-straightPx)/len);
+      ctx.beginPath();ctx.moveTo(a.x,a.y);
+      var steps=Math.ceil(len*tStop/2);
+      for(var i=1;i<=steps;i++){
+        var t=i/steps*tStop;
+        var wave=Math.sin(t*freq*Math.PI*2)*amp;
+        ctx.lineTo(a.x+dx*t+nx*wave,a.y+dy*t+ny*wave);
+      }
+      // Straight segment to endpoint
+      ctx.lineTo(b.x,b.y);
+      ctx.stroke();
+    }
+  } else if(el.type==='line'){
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  } else if(el.type==='dashedline'){
+    ctx.setLineDash([8,5]);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.setLineDash([]);
+  // Only draw arrowhead for arrow types
+  if(el.type!=='line'&&el.type!=='dashedline'){
+    var ang=Math.atan2(b.y-a.y,b.x-a.x),al=10,asp=0.38;
+    ctx.fillStyle=el.color||'#fff';
+    ctx.beginPath();
+    ctx.moveTo(b.x,b.y);
+    ctx.lineTo(b.x-al*Math.cos(ang-asp),b.y-al*Math.sin(ang-asp));
+    ctx.lineTo(b.x-al*Math.cos(ang+asp),b.y-al*Math.sin(ang+asp));
+    ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawText(el, d) {
+  var p = m2p(el.x, el.y, d);
+  var scale = d.pw / 500;
+  var fs = Math.round((el.size || 14) * scale);
+  fs = Math.max(9, Math.min(fs, 52));
+  ctx.save();
+  ctx.font = 'bold ' + fs + 'px Inter,Arial,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  if (!S._bw) {
+    ctx.shadowColor = 'rgba(0,0,0,0.75)';
+    ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
+  }
+  ctx.fillStyle = S._bw ? '#111111' : (el.color || '#ffffff');
+  var lines = String(el.text).split('\n');
+  var lineH = fs * 1.3;
+  lines.forEach(function(line, i) {
+    ctx.fillText(line, p.x, p.y + i * lineH);
+  });
+  ctx.restore();
+}
+
+function drawRect(el, d, alpha) {
+  if (el.x2 == null) return;
+  var a = m2p(el.x,  el.y,  d);
+  var b = m2p(el.x2, el.y2, d);
+  var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+  var w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+  ctx.save();
+  ctx.globalAlpha = alpha != null ? alpha : 1;
+  ctx.strokeStyle = el.color || '#fff';
+  ctx.lineWidth   = 2.2;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  if (el.type === 'dashedrect') ctx.setLineDash([8, 5]);
+  else ctx.setLineDash([]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawAll() {
+  if(!canvas.width||!canvas.height) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(S._bw){ ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+  var d=getDims();
+  drawPitch(d);
+  S.elements.forEach(function(el){
+    var p=m2p(el.x,el.y,d);
+    if(el.type==='player') drawJersey(p.x,p.y,el.num,el.team==='A'?S.teamColors.A:S.teamColors.B);
+    else if(el.type==='cone') drawCone(p.x,p.y,el.color,el.shape);
+    else if(el.type==='ball') drawBall(p.x,p.y);
+    else if(el.type==='text') drawText(el,d);
+    else if(el.type==='rect'||el.type==='dashedrect') drawRect(el,d);
+    else drawArrow(el,d);
+  });
+  if(S.multiframe&&S.frames.length&&!S._exporting){ S.frames[S.currentFrame].elements=JSON.parse(JSON.stringify(S.elements)); }
+  if(S.lineStart&&S.mouse&&(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line'||S.tool==='dashedline'||S.tool==='rect'||S.tool==='dashedrect')){
+    var fe={type:S.tool,x:S.lineStart.x,y:S.lineStart.y,x2:S.mouse.x,y2:S.mouse.y,color:S.lineColor};
+    if(S.tool==='rect'||S.tool==='dashedrect') drawRect(fe,d,0.5); else drawArrow(fe,d,0.45);
+    var sp=m2p(S.lineStart.x,S.lineStart.y,d);
+    ctx.fillStyle=S.lineColor;ctx.beginPath();ctx.arc(sp.x,sp.y,4,0,Math.PI*2);ctx.fill();
+  }
+}
+
+function evPos(e) {
+  var r=canvas.getBoundingClientRect();
+  var src=e.touches?e.touches[0]:e;
+  var px=src.clientX-r.left, py=src.clientY-r.top;
+  var d=getDims(), m=p2m(px,py,d);
+  return {px:px,py:py,mx:m.x,my:m.y,d:d};
+}
+
+function onDown(e) {
+  e.preventDefault();
+  var pos=evPos(e);
+  var px=pos.px,py=pos.py,mx=pos.mx,my=pos.my,d=pos.d;
+  var isShift=e.shiftKey;
+  if(S.tool==='select'){
+    var el=findEl(px,py,d);
+    if(el){var ep=m2p(el.x,el.y,d);S.dragging=el;S.dragOffX=px-ep.x;S.dragOffY=py-ep.y;}
+    return;
+  }
+  if(S.tool==='erase'){
+    var el2=findEl(px,py,d);
+    if(el2){push();S.elements=S.elements.filter(function(e){return e!==el2;});drawAll();}
+    return;
+  }
+  if(!inPitch(mx,my,d)) return;
+  if(S.tool==='player'){
+    push();
+    var nA=S.elements.filter(function(e){return e.type==='player'&&e.team==='A';}).length;
+    var nB=S.elements.filter(function(e){return e.type==='player'&&e.team==='B';}).length;
+    var maxA=parseInt(document.getElementById('teamA-count').value)||11;
+    var maxB=parseInt(document.getElementById('teamB-count').value)||11;
+    var team=S.activeTeam==='B'&&nB<maxB?'B':'A';
+    var num=team==='A'?nA+1:nB+1;
+    S.elements.push({type:'player',x:mx,y:my,team:team,num:num});
+    drawAll();return;
+  }
+  if(S.tool==='cone'){
+    push();
+    S.elements.push({type:'cone',x:mx,y:my,color:S.coneColor,shape:S.coneShape});
+    drawAll();return;
+  }
+  if(S.tool==='ball'){
+    push();S.elements.push({type:'ball',x:mx,y:my});drawAll();return;
+  }
+  if(S.tool==='text'){
+    startTextEdit(px,py,mx,my,d);return;
+  }
+  if(S.tool==='pass'||S.tool==='move'||S.tool==='dribble'||S.tool==='line'||S.tool==='dashedline'||S.tool==='rect'||S.tool==='dashedrect'){
+    if(!S.lineStart){S.lineStart={x:mx,y:my};}
+    else{
+      push();
+      S.elements.push({type:S.tool,x:S.lineStart.x,y:S.lineStart.y,x2:mx,y2:my,color:S.lineColor});
+      S.lineStart=null;drawAll();
+    }
+  }
+}
+
+function onMove(e) {
+  e.preventDefault();
+  var pos=evPos(e);
+  S.mouse={x:pos.mx,y:pos.my};
+  var hints={player:'Klicka för att placera spelare',cone:'Klicka för kon',pass:'Klicka startpunkt sedan slutpunkt',move:'Klicka startpunkt sedan slutpunkt',dribble:'Klicka startpunkt sedan slutpunkt',line:'Klicka startpunkt sedan slutpunkt',dashedline:'Klicka startpunkt sedan slutpunkt',ball:'Klicka för boll',select:'Dra för att flytta',erase:'Klicka för att radera',rect:'Klicka startpunkt sedan slutpunkt',dashedrect:'Klicka startpunkt sedan slutpunkt',text:'Klicka för att placera text — Enter = klar, Shift+Enter = ny rad, Esc = avbryt'};
+  document.getElementById('hint-bar').textContent=S.lineStart?'Klicka för slutpunkt — Esc avbryter':(hints[S.tool]||'');
+  if(S.dragging){
+    var d2=getDims();
+    var m=p2m(pos.px-S.dragOffX,pos.py-S.dragOffY,d2);
+    S.dragging.x=m.x;S.dragging.y=m.y;drawAll();return;
+  }
+  if(S.lineStart) drawAll();
+}
+
+function onUp(e){S.dragging=null;}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('mousemove',onMove);
+canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',onDown,{passive:false});
+canvas.addEventListener('touchmove',onMove,{passive:false});
+canvas.addEventListener('touchend',onUp);
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){S.lineStart=null;drawAll();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z') undoLast();
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  var map={p:'player',k:'cone',a:'pass',r:'move',d:'dribble',l:'line',x:'dashedline',b:'ball',s:'select',e:'erase',t:'text',q:'rect',w:'dashedrect'};
+  if(map[e.key]) setTool(map[e.key]);
+});
+
+function findEl(px,py,d){
+  for(var i=S.elements.length-1;i>=0;i--){
+    var el=S.elements[i];
+    if(el.type==='pass'||el.type==='move'||el.type==='dribble'||el.type==='line'||el.type==='dashedline'||el.type==='rect'||el.type==='dashedrect'){
+      if(el.x2==null) continue;
+      var a=m2p(el.x,el.y,d),b=m2p(el.x2,el.y2,d);
+      if(dist(px,py,(a.x+b.x)/2,(a.y+b.y)/2)<18) return el;
+    } else if(el.type==='text') {
+      var tp=m2p(el.x,el.y,d);
+      var tfs=Math.max(9,Math.min(Math.round(14*(d.pw/500)),52));
+      var tlines=String(el.text).split('\n');
+      var tw=150, th=tlines.length*tfs*1.3+6;
+      if(px>=tp.x-4&&px<=tp.x+tw&&py>=tp.y-4&&py<=tp.y+th) return el;
+    } else {
+      var p=m2p(el.x,el.y,d);
+      if(dist(px,py,p.x,p.y)<20) return el;
+    }
+  }
+  return null;
+}
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));}
+
+function setTool(t){
+  S.tool=t;S.lineStart=null;
+  document.querySelectorAll('.tool-btn').forEach(function(b){b.classList.remove('active');});
+  var btn=document.getElementById('tool-'+t);if(btn) btn.classList.add('active');
+  canvas.style.cursor=t==='select'?'grab':t==='erase'?'cell':'crosshair';
+  drawAll();
+}
+function setPitch(p){
+  if(S.multiframe) saveCurrentFrame();
+  S.pitch=p;
+  document.querySelectorAll('.pitch-option').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('[data-pitch="'+p+'"]').classList.add('active');
+  // Show/hide free format picker
+  var picker=document.getElementById('free-format-picker');
+  if(p==='free') picker.classList.remove('hidden'); else picker.classList.add('hidden');
+  if(S.multiframe){ S.frames[S.currentFrame].pitch=p; renderFilmstrip(); }
+  drawAll();
+}
+
+function setFreeFormat(fmt){
+  S.freeFormat=fmt;
+  document.querySelectorAll('.free-fmt-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('[data-fmt="'+fmt+'"]').classList.add('active');
+  drawAll();
+}
+function setLineColor(c){
+  S.lineColor=c;
+  document.querySelectorAll('.color-swatch').forEach(function(s){s.classList.remove('active');});
+  document.querySelector('[data-color="'+c+'"]').classList.add('active');
+}
+function push(){
+  S.history.push(JSON.stringify(S.elements));
+  if(S.history.length>60) S.history.shift();
+}
+function undoLast(){
+  if(!S.history.length) return;
+  S.elements=JSON.parse(S.history.pop());drawAll();
+}
+function clearCanvas(){
+  if(!confirm('Rensa hela planen?')) return;
+  push();S.elements=[];S.lineStart=null;drawAll();
+}
+
+function addStep(){
+  var title=document.getElementById('step-title').value.trim();
+  var comment=document.getElementById('step-comment').value.trim();
+  if(!title){alert('Ange ett namn!');return;}
+  S.steps.push({id:Date.now(),num:S.steps.length+1,title:title,comment:comment,snapshot:JSON.stringify(S.elements)});
+  document.getElementById('step-title').value='';
+  document.getElementById('step-comment').value='';
+  renderSteps();
+}
+function snapStep(){
+  document.getElementById('step-title').value='Moment '+(S.steps.length+1);
+  document.getElementById('step-title').focus();
+}
+function deleteStep(id){
+  S.steps=S.steps.filter(function(s){return s.id!==id;});
+  S.steps.forEach(function(s,i){s.num=i+1;});
+  renderSteps();
+}
+function loadStep(id){
+  var s=S.steps.find(function(s){return s.id===id;});if(!s) return;
+  S.activeStep=id;S.elements=JSON.parse(s.snapshot);renderSteps();drawAll();
+}
+function renderSteps(){
+  var list=document.getElementById('steps-list');
+  if(!S.steps.length){list.innerHTML='<div class="step-empty">Rita övningen och lägg till moment</div>';return;}
+  list.innerHTML=S.steps.map(function(s){
+    return '<div class="step-card '+(S.activeStep===s.id?'active':'')+'" onclick="loadStep('+s.id+')">'
+      +'<button class="step-delete" onclick="event.stopPropagation();deleteStep('+s.id+')">&#x2715;</button>'
+      +'<div class="step-card-title"><span class="step-num">'+s.num+'</span>'+s.title+'</div>'
+      +(s.comment?'<div class="step-card-comment">'+s.comment+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+// Render a frame to a full-size offscreen canvas and return it
+// Render a frame to an offscreen canvas at a given pixel width (for PDF compression)
+function renderFrameToCanvas(frame, targetW) {
+  var aspect = canvas.width / canvas.height;
+  var rw = targetW || canvas.width;
+  var rh = Math.round(rw / aspect);
+
+  var oc = document.createElement('canvas');
+  oc.width = rw; oc.height = rh;
+  var octx = oc.getContext('2d');
+
+  // Snapshot ALL state — deep copy elements so nothing leaks between frames
+  var savedEls    = S.elements;
+  var savedPitch  = S.pitch;
+  var savedFmt    = S.freeFormat;
+  var savedLine   = S.lineStart;
+  var savedMouse  = S.mouse;
+  var savedExp    = S._exporting;
+  var savedBw     = S._bw;  // preserve _bw — set by caller, don't let restore clobber it
+  var realCanvas  = canvas;
+  var realCtx     = ctx;
+
+  // Load this frame's state (deep copy so drawAll writeback can't corrupt it)
+  S.elements   = JSON.parse(JSON.stringify(frame.elements || []));
+  S.pitch      = frame.pitch      || savedPitch;
+  S.freeFormat = frame.freeFormat || savedFmt;
+  S.lineStart  = null;
+  S.mouse      = null;
+  S._exporting = true;   // prevents drawAll from writing back into S.frames
+  canvas = oc;
+  ctx    = octx;
+
+  drawAll();
+
+  // Restore everything exactly
+  canvas       = realCanvas;
+  ctx          = realCtx;
+  S.elements   = savedEls;
+  S.pitch      = savedPitch;
+  S.freeFormat = savedFmt;
+  S.lineStart  = savedLine;
+  S.mouse      = savedMouse;
+  S._exporting = savedExp;
+
+  return oc;
+}
+
+function getExportFrames() {
+  if (S.multiframe && S.frames.length > 0) {
+    saveCurrentFrame();
+    return S.frames;
+  }
+  return [{ elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch, freeFormat: S.freeFormat }];
+}
+
+function exportPNG(bw){
+  S._bw = !!bw;
+  try {
+    var frames = getExportFrames();
+    if (frames.length === 1) {
+      var oc = renderFrameToCanvas(frames[0]);
+      var stepLines = S.steps.map(function(s){ return s.num+'. '+s.title+(s.comment?' — '+s.comment:''); });
+      if (!stepLines.length) {
+        var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=oc.toDataURL('image/png'); a.click();
+      } else {
+        var lineH=18, pad=14, textH=stepLines.length*lineH+pad*2+10;
+        var fc=document.createElement('canvas');
+        fc.width=oc.width; fc.height=oc.height+textH;
+        var fctx=fc.getContext('2d');
+        fctx.drawImage(oc,0,0);
+        fctx.fillStyle=bw?'#ffffff':'#0d1511'; fctx.fillRect(0,oc.height,fc.width,textH);
+        fctx.strokeStyle=bw?'rgba(0,0,0,0.3)':'rgba(126,232,162,0.4)'; fctx.lineWidth=1;
+        fctx.beginPath(); fctx.moveTo(pad,oc.height+8); fctx.lineTo(fc.width-pad,oc.height+8); fctx.stroke();
+        fctx.fillStyle=bw?'#111111':'rgba(255,255,255,0.8)'; fctx.font='13px Inter,Arial,sans-serif';
+        stepLines.forEach(function(line,i){ fctx.fillText(line,pad,oc.height+pad+10+(i*lineH)); });
+        var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=fc.toDataURL('image/png'); a.click();
+      }
+    } else {
+      frames.forEach(function(frame, idx){
+        var oc = renderFrameToCanvas(frame);
+        var a=document.createElement('a');
+        a.download='dewpicked-frame-'+(idx+1)+(bw?'-bw':'')+'.png';
+        a.href=oc.toDataURL('image/png');
+        a.click();
+      });
+    }
+  } catch(err) {
+    alert('PNG-export misslyckades: '+err.message);
+    console.error(err);
+  }
+  S._bw = false;
+  drawAll(); // redraw screen in normal colors
+}
+
+function exportPDF(bw){
+  S._bw = !!bw;
+  if(!window.jspdf){alert('PDF-biblioteket laddas. Vänta en sekund och försök igen.');return;}
+  try{
+    var jsPDF=window.jspdf.jsPDF;
+    var frames=getExportFrames();
+    var pdfW=297,pdfH=210;
+    var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+
+    // Render at reduced resolution for PDF — 900px wide is plenty for A4
+    var PDF_RENDER_W = 900;
+
+    frames.forEach(function(frame, idx){
+      if(idx>0) doc.addPage();
+
+      // Render frame at reduced size
+      var oc = renderFrameToCanvas(frame, PDF_RENDER_W);
+
+      // Use JPEG at 0.82 quality — much smaller than PNG, looks fine for print
+      var imgData = oc.toDataURL('image/jpeg', 0.82);
+
+      var asp = oc.width / oc.height;
+      var imgW = pdfW * 0.63, imgH = imgW / asp;
+      if(imgH > pdfH-16){ imgH=pdfH-16; imgW=imgH*asp; }
+      doc.addImage(imgData,'JPEG',10,8,imgW,imgH);
+
+      // Right text column
+      var colX=10+imgW+7, colW=pdfW-colX-8, y=15;
+
+      // Header
+      doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      doc.setTextColor(126,232,162);
+      doc.text(frames.length>1?'Frame '+(idx+1)+' / '+frames.length:'Dewpicked Football Coaching', colX, y);
+      y+=6;
+      doc.setDrawColor(126,232,162); doc.setLineWidth(0.25);
+      doc.line(colX,y,colX+colW,y); y+=5;
+
+      // Frame comment
+      if(frame.comment){
+        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(180,210,180);
+        doc.splitTextToSize(frame.comment,colW-4).forEach(function(l){
+          if(y<pdfH-10){doc.text(l,colX,y);y+=4.5;}
+        });
+        y+=3;
+      }
+
+      // Steps on every page
+      if(S.steps.length){
+        S.steps.forEach(function(s){
+          if(y>pdfH-10) return;
+          doc.setFillColor(20,55,35); doc.rect(colX,y-3.5,colW,5.8,'F');
+          doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(240,245,240);
+          doc.text(s.num+'.  '+s.title, colX+2, y); y+=5.5;
+          if(s.comment && y<pdfH-8){
+            doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(160,200,160);
+            doc.splitTextToSize(s.comment,colW-5).forEach(function(line){
+              if(y<pdfH-8){doc.text(line,colX+4,y);y+=4;}
+            });
+            y+=2;
+          }
+        });
+      } else {
+        doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(120,140,120);
+        doc.text('Inga moment tillagda', colX, y);
+      }
+
+      // Footer
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,110,80);
+      var footer='Dewpicked Football Coaching  ·  '+new Date().toLocaleDateString('sv-SE');
+      if(frames.length>1) footer+='  ·  '+(idx+1)+'/'+frames.length;
+      doc.text(footer, 10, pdfH-4);
+    });
+
+    doc.save('dewpicked-coaching'+(bw?'-bw':'')+'.pdf');
+    S._bw=false;
+  } catch(err){
+    alert('PDF-export misslyckades: '+err.message+'\nFörsök med PNG istället.');
+    S._bw=false; console.error(err);
+  }
+}
+
+resize();
+
+
+// ── MOBILE TOOLBAR BUTTON HIGHLIGHT ──────────────────────────────────────────
+var _origSetToolMobile = setTool;
+setTool = function(t) {
+  _origSetToolMobile(t);
+  document.querySelectorAll('.tb-btn').forEach(function(b){ b.classList.remove('active'); });
+  var tb = document.getElementById('tool-' + t);
+  if (tb) tb.classList.add('active');
+};
+
+// Override resize for mobile (account for toolbar height)
+function resize() {
+  var area = document.getElementById('canvas-area');
+  var r = area.getBoundingClientRect();
+  canvas.width  = Math.floor(r.width);
+  canvas.height = Math.floor(r.height);
+  drawAll();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('load', function(){ setTimeout(resize, 80); });
+resize();
+</script>
+</body>
+</html>
