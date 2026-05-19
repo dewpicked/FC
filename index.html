@@ -533,11 +533,11 @@
       <div class="toolbox-title">Välj lag</div>
       <div class="team-picker">
         <button class="team-pick-btn active" id="pick-A" onclick="setActiveTeam('A')">
-          <svg id="jersey-icon-A" viewBox="0 0 24 24" width="22" height="22"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#5a28be"/><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></svg>
+          <svg id="jersey-icon-A" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" fill="#5a28be" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="white" font-family="sans-serif">A</text></svg>
           <span>Team A</span>
         </button>
         <button class="team-pick-btn" id="pick-B" onclick="setActiveTeam('B')">
-          <svg id="jersey-icon-B" viewBox="0 0 24 24" width="22" height="22"><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="#e8e8e8"/><path d="M8 3 Q7 3 6 4 L4 7 Q3 8 4 9 L6 9 L6 18 Q6 19 7 19 L9 19 L9 14 L15 14 L15 19 L17 19 Q18 19 18 18 L18 9 L20 9 Q21 8 20 7 L18 4 Q17 3 16 3 Z" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></svg>
+          <svg id="jersey-icon-B" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" fill="#e8e8e8" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="#333" font-family="sans-serif">B</text></svg>
           <span>Team B</span>
         </button>
       </div>
@@ -771,7 +771,7 @@ function renderMiniature(tc, frame) {
   if(pw/ph>aspect) pw=ph*aspect; else ph=pw/aspect;
   var ox=(W-pw)/2, oy=(H-ph)/2;
   // Draw green bg
-  tctx.fillStyle='#1a5c28'; tctx.fillRect(ox,oy,pw,ph);
+  tctx.fillStyle='#2d8c47'; tctx.fillRect(ox,oy,pw,ph);
   // Border
   tctx.strokeStyle='rgba(255,255,255,0.7)'; tctx.lineWidth=0.5; tctx.strokeRect(ox,oy,pw,ph);
   // Draw elements as dots/lines
@@ -806,9 +806,8 @@ function setActiveTeam(t) {
 
 function setTeamColor(team, color) {
   S.teamColors[team] = color;
-  // Update jersey icon in button
   var icon = document.getElementById('jersey-icon-'+team);
-  if (icon) icon.querySelector('path').setAttribute('fill', color);
+  if (icon) { var circ = icon.querySelector('circle'); if (circ) circ.setAttribute('fill', color); }
   drawAll();
 }
 
@@ -963,7 +962,7 @@ function inPitch(mx,my,d){ return mx>=0&&my>=0&&mx<=d.realW&&my<=d.realH; }
 function drawPitch(d) {
   var ox=d.ox, oy=d.oy, pw=d.pw, ph=d.ph, RW=d.realW, RH=d.realH;
   // Background
-  ctx.fillStyle=S._bw?'#ffffff':'#1a5c28';
+  ctx.fillStyle=S._bw?'#ffffff':'#2d8c47';
   ctx.fillRect(ox,oy,pw,ph);
   // Stripes (skip in BW)
   if(!S._bw){
@@ -1056,47 +1055,25 @@ function drawPitch(d) {
   // free: plain green, no lines drawn
 }
 
-function drawJersey(px,py,num,color) {
-  var w=22, h=32; // wider and taller — more elongated
-  ctx.save(); ctx.translate(px,py);
-  // In BW mode: team A = dark grey, team B = white with black border
-  if(S._bw){
-    var isBright = (function(c){ var r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); return (r*299+g*587+b*114)/1000 > 140; })(color);
-    color = isBright ? '#f0f0f0' : '#2a2a2a';
+function drawPlayer(px, py, num, color, team, d) {
+  var baseR = Math.max(10, Math.min(18, d.pw * 0.038));
+  var r = baseR;
+  ctx.save(); ctx.translate(px, py);
+  if (S._bw) {
+    color = team === 'A' ? '#2a2a2a' : '#f0f0f0';
   }
-  ctx.fillStyle=color; ctx.strokeStyle=S._bw?'rgba(0,0,0,0.7)':'rgba(255,255,255,0.65)'; ctx.lineWidth=1.1;
-  // Body — tall trapezoid
-  ctx.beginPath();
-  ctx.moveTo(-w*0.52, -h*0.06);
-  ctx.lineTo(-w*0.44,  h*0.82);
-  ctx.lineTo( w*0.44,  h*0.82);
-  ctx.lineTo( w*0.52, -h*0.06);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  // Left sleeve — short and stubby
-  ctx.beginPath();
-  ctx.moveTo(-w*0.52, -h*0.06);
-  ctx.lineTo(-w*0.92,  h*0.22);
-  ctx.lineTo(-w*0.72,  h*0.34);
-  ctx.lineTo(-w*0.44,  h*0.16);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  // Right sleeve
-  ctx.beginPath();
-  ctx.moveTo( w*0.52, -h*0.06);
-  ctx.lineTo( w*0.92,  h*0.22);
-  ctx.lineTo( w*0.72,  h*0.34);
-  ctx.lineTo( w*0.44,  h*0.16);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  // Collar
-  ctx.fillStyle='rgba(255,255,255,0.22)';
-  ctx.beginPath();ctx.ellipse(0,-h*0.08,w*0.18,h*0.08,0,0,Math.PI*2);ctx.fill();
-  // Number
-  // Pick number color based on jersey brightness
-  var r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
-  var brightness=(r*299+g*587+b*114)/1000;
-  ctx.fillStyle=brightness>140?'rgba(20,20,20,0.9)':'rgba(255,255,255,0.95)';
-  ctx.font='bold '+Math.round(h*0.38)+'px Barlow Condensed, sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(String(num),0,h*0.32);
+  var strokeW = Math.max(1.5, r * 0.18);
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = S._bw ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.75)';
+  ctx.lineWidth = strokeW;
+  ctx.stroke();
+  var cr = parseInt(color.slice(1,3),16), cg = parseInt(color.slice(3,5),16), cb = parseInt(color.slice(5,7),16);
+  ctx.fillStyle = (cr*299+cg*587+cb*114)/1000 > 140 ? 'rgba(20,20,20,0.95)' : 'rgba(255,255,255,0.95)';
+  ctx.font = 'bold ' + Math.round(r * 1.0) + 'px Barlow Condensed, Inter, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(num), 0, 0);
   ctx.restore();
 }
 
@@ -1247,7 +1224,7 @@ function drawAll() {
   drawPitch(d);
   S.elements.forEach(function(el){
     var p=m2p(el.x,el.y,d);
-    if(el.type==='player') drawJersey(p.x,p.y,el.num,el.team==='A'?S.teamColors.A:S.teamColors.B);
+    if(el.type==='player') drawPlayer(p.x,p.y,el.num,el.team==='A'?S.teamColors.A:S.teamColors.B,el.team,d);
     else if(el.type==='cone') drawCone(p.x,p.y,el.color,el.shape);
     else if(el.type==='ball') drawBall(p.x,p.y);
     else if(el.type==='text') drawText(el,d);
@@ -1503,43 +1480,123 @@ function getExportFrames() {
   return [{ elements: JSON.parse(JSON.stringify(S.elements)), pitch: S.pitch, freeFormat: S.freeFormat }];
 }
 
+function wrapText(fctx, text, x, y, maxW, lineH) {
+  // Word-wrap a string, return new y position
+  var words = text.split(' ');
+  var line = '';
+  for (var i = 0; i < words.length; i++) {
+    var test = line ? line + ' ' + words[i] : words[i];
+    if (fctx.measureText(test).width > maxW && line) {
+      fctx.fillText(line, x, y);
+      line = words[i];
+      y += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) { fctx.fillText(line, x, y); y += lineH; }
+  return y;
+}
+
 function exportPNG(bw){
   S._bw = !!bw;
   try {
     var frames = getExportFrames();
+    var pad = 16, titleFontSize = 15, commentFontSize = 13, lineH = 20, stepGap = 6;
+    var maxTextW; // set per canvas width
+
+    function buildCanvas(oc, steps) {
+      var bgCol  = bw ? '#ffffff' : '#0d1511';
+      var sepCol = bw ? 'rgba(0,0,0,0.25)' : 'rgba(126,232,162,0.4)';
+      var numCol = bw ? '#ffffff' : '#0a1a0f';
+      var numBg  = bw ? '#333333' : '#7ee8a2';
+      var titCol = bw ? '#000000' : 'rgba(255,255,255,0.9)';
+      var comCol = bw ? '#333333' : 'rgba(200,220,200,0.85)';
+
+      maxTextW = oc.width - pad * 2 - 30; // 30px for step number circle
+
+      // Pre-measure total text height needed
+      var tmp = document.createElement('canvas');
+      tmp.width = oc.width; tmp.height = 1000;
+      var tc = tmp.getContext('2d');
+
+      function measureSteps(steps) {
+        var h = pad + 10; // separator gap
+        steps.forEach(function(s) {
+          tc.font = 'bold ' + titleFontSize + 'px Inter,Arial,sans-serif';
+          h += wrapText(tc, s.num + '.  ' + s.title, pad + 26, 0, maxTextW, lineH) + stepGap;
+          if (s.comment) {
+            tc.font = commentFontSize + 'px Inter,Arial,sans-serif';
+            h += wrapText(tc, s.comment, pad + 26, 0, maxTextW, lineH) + 4;
+          }
+        });
+        return h + pad;
+      }
+
+      var textH = steps.length ? measureSteps(steps) : 0;
+      var fc = document.createElement('canvas');
+      fc.width = oc.width;
+      fc.height = oc.height + textH;
+      var fctx = fc.getContext('2d');
+      fctx.drawImage(oc, 0, 0);
+
+      if (textH) {
+        fctx.fillStyle = bgCol;
+        fctx.fillRect(0, oc.height, fc.width, textH);
+        // Separator line
+        fctx.strokeStyle = sepCol; fctx.lineWidth = 1.5;
+        fctx.beginPath(); fctx.moveTo(pad, oc.height + 10); fctx.lineTo(fc.width - pad, oc.height + 10); fctx.stroke();
+
+        var cy = oc.height + pad + 14;
+        steps.forEach(function(s) {
+          // Number circle
+          fctx.fillStyle = numBg;
+          fctx.beginPath(); fctx.arc(pad + 10, cy + 1, 10, 0, Math.PI * 2); fctx.fill();
+          fctx.fillStyle = numCol;
+          fctx.font = 'bold 11px Inter,Arial,sans-serif';
+          fctx.textAlign = 'center'; fctx.textBaseline = 'middle';
+          fctx.fillText(String(s.num), pad + 10, cy + 1);
+          fctx.textAlign = 'left'; fctx.textBaseline = 'alphabetic';
+          // Title
+          fctx.fillStyle = titCol;
+          fctx.font = 'bold ' + titleFontSize + 'px Inter,Arial,sans-serif';
+          cy = wrapText(fctx, s.title, pad + 26, cy, maxTextW, lineH);
+          cy += stepGap;
+          // Comment
+          if (s.comment) {
+            fctx.fillStyle = comCol;
+            fctx.font = commentFontSize + 'px Inter,Arial,sans-serif';
+            cy = wrapText(fctx, s.comment, pad + 26, cy, maxTextW, lineH);
+            cy += 4;
+          }
+        });
+      }
+      return fc;
+    }
+
     if (frames.length === 1) {
       var oc = renderFrameToCanvas(frames[0]);
-      var stepLines = S.steps.map(function(s){ return s.num+'. '+s.title+(s.comment?' — '+s.comment:''); });
-      if (!stepLines.length) {
-        var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=oc.toDataURL('image/png'); a.click();
-      } else {
-        var lineH=18, pad=14, textH=stepLines.length*lineH+pad*2+10;
-        var fc=document.createElement('canvas');
-        fc.width=oc.width; fc.height=oc.height+textH;
-        var fctx=fc.getContext('2d');
-        fctx.drawImage(oc,0,0);
-        fctx.fillStyle=bw?'#ffffff':'#0d1511'; fctx.fillRect(0,oc.height,fc.width,textH);
-        fctx.strokeStyle=bw?'rgba(0,0,0,0.35)':'rgba(126,232,162,0.4)'; fctx.lineWidth=1;
-        fctx.beginPath(); fctx.moveTo(pad,oc.height+8); fctx.lineTo(fc.width-pad,oc.height+8); fctx.stroke();
-        fctx.fillStyle=bw?'#111111':'rgba(255,255,255,0.85)'; fctx.font='bold 15px Inter,Arial,sans-serif';
-        stepLines.forEach(function(line,i){ fctx.fillText(line,pad,oc.height+pad+10+(i*lineH)); });
-        var a=document.createElement('a'); a.download='dewpicked-plan'+(bw?'-bw':'')+'.png'; a.href=fc.toDataURL('image/png'); a.click();
-      }
+      var fc = buildCanvas(oc, S.steps);
+      var a = document.createElement('a');
+      a.download = 'dewpicked-plan' + (bw ? '-bw' : '') + '.jpg';
+      a.href = fc.toDataURL('image/jpeg', 0.88);
+      a.click();
     } else {
-      frames.forEach(function(frame, idx){
+      frames.forEach(function(frame, idx) {
         var oc = renderFrameToCanvas(frame);
-        var a=document.createElement('a');
-        a.download='dewpicked-frame-'+(idx+1)+(bw?'-bw':'')+'.png';
-        a.href=oc.toDataURL('image/png');
+        var fc = buildCanvas(oc, S.steps);
+        var a = document.createElement('a');
+        a.download = 'dewpicked-frame-' + (idx + 1) + (bw ? '-bw' : '') + '.jpg';
+        a.href = fc.toDataURL('image/jpeg', 0.88);
         a.click();
       });
     }
   } catch(err) {
-    alert('PNG-export misslyckades: '+err.message);
+    alert('JPEG-export misslyckades: ' + err.message);
     console.error(err);
   }
   S._bw = false;
-  drawAll(); // redraw screen in normal colors
+  drawAll();
 }
 
 function exportPDF(bw){
