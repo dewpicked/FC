@@ -550,6 +550,8 @@
         <input type="color" id="colorA" value="#5a28be" oninput="setTeamColor('A',this.value)" title="Välj färg Team A">
         <label>Färg B:</label>
         <input type="color" id="colorB" value="#e8e8e8" oninput="setTeamColor('B',this.value)" title="Välj färg Team B">
+        <label>C:</label>
+        <input type="color" id="colorC" value="#e8540a" oninput="setTeamColor('C',this.value)" title="Välj färg Team C">
       </div>
       <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
         <label style="font-size:10px;color:rgba(255,255,255,0.35);flex:1;">Max spelare</label>
@@ -1444,7 +1446,7 @@ function onDown(e) {
     var nC=S.elements.filter(function(e){return e.type==='player'&&e.team==='C';}).length;
     var maxA=parseInt(document.getElementById('teamA-count').value)||11;
     var maxB=parseInt(document.getElementById('teamB-count').value)||11;
-    var maxC=parseInt(document.getElementById('teamC-count').value)||0;
+    var maxC=parseInt(document.getElementById('teamC-count').value)||11;
     var team='A';
     if(S.activeTeam==='B'&&nB<maxB) team='B';
     else if(S.activeTeam==='C'&&nC<maxC) team='C';
